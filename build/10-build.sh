@@ -29,8 +29,6 @@ copy_layer() {
 echo "::group:: Apply OCI and product layers"
 
 copy_layer "dsb-common shared" "/ctx/oci/dsb-common/shared"
-copy_layer "projectbluefin/common shared" "/ctx/oci/common/shared"
-copy_layer "projectbluefin/common bluefin" "/ctx/oci/common/bluefin"
 copy_layer "dsb-common dudley" "/ctx/oci/dsb-common/dudley"
 copy_layer "local dudley-os product files" "/ctx/custom/system_files"
 
