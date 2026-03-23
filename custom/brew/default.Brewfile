@@ -1,22 +1,32 @@
-# Default Brewfile for bluepilot
-# Add your favorite brew packages here
-# 
-# Examples:
+# Dudley CLI tools carried forward from dudleys-second-bedroom
+tap "valkyrie00/bbrew"
 
-# Modern CLI tools
-brew "bat"        # cat with syntax highlighting
-brew "eza"        # Modern replacement for ls
-brew "fd"         # Simple, fast alternative to find
-brew "rg"         # ripgrep - faster grep
-
-# Development tools
-brew "gh"         # GitHub CLI
-brew "git"        # Git version control
-
-# Shell enhancements  
-brew "starship"   # Cross-shell prompt
-brew "zoxide"     # Smarter cd command
-
-# Utilities
-brew "htop"       # Interactive process viewer
-brew "tmux"       # Terminal multiplexer
+brew "bash-preexec"
+brew "bat"
+brew "chezmoi"
+brew "direnv"
+brew "dysk"
+brew "eza"
+brew "fd"
+brew "figlet"
+brew "gh"
+brew "git-lfs"
+brew "glab"
+brew "pack"
+brew "pigz"
+brew "ripgrep"
+brew "shellcheck"
+brew "starship"
+brew "stress-ng"
+brew "tealdeer"
+brew "television"
+brew "trash-cli"
+brew "tree"
+brew "ugrep"
+brew "uutils-coreutils"
+brew "unzip"
+brew "valkyrie00/bbrew/bbrew"
+brew "yamllint"
+brew "yq"
+brew "zoxide"
+brew "zopfli"

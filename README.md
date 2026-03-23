@@ -19,8 +19,8 @@ Here are the changes from the base image (`ghcr.io/ublue-os/silverblue-main`). D
 - Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
 
 ### Product-specific Additions (this repo)
-- Dudley-specific Brewfiles in `custom/brew/`
-- Dudley-specific Flatpak preinstall lists in `custom/flatpaks/`
+- Dudley-specific Brewfiles in `custom/brew/`, preserving the legacy CLI/dev/fonts manifests from `dudleys-second-bedroom`
+- Dudley-specific Flatpak preinstall list in `custom/flatpaks/`, preserving the Dudley runtime app set while converting it to the finpilot preinstall format
 - Dudley-specific ujust shortcuts in `custom/ujust/`
 - Dudley-only first-login hooks and VS Code Insiders setup in `custom/system_files/` and `build/10-build.sh`
 
@@ -32,6 +32,22 @@ Here are the changes from the base image (`ghcr.io/ublue-os/silverblue-main`). D
 ---
 
 ## What's Included
+
+### Dudley migration checklist
+
+The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshyorko/dudleys-second-bedroom/tree/main) was explicitly audited so Dudley behavior is either preserved here, moved into `dsb-common`, or intentionally retired:
+
+| Legacy area | Status | Dudley-os outcome |
+| --- | --- | --- |
+| `custom_wallpapers/` | now owned by `dsb-common` | Dudley wallpapers are consumed from `/system_files/dudley/usr/share/backgrounds/dudley`; no local wallpaper assets are kept here |
+| `system_files/` shared defaults and runtime wallpaper randomizer files | now owned by `dsb-common` | Shared just/runtime/default content stays in the shared OCI layer and is copied in before local product files |
+| `brew/` (`dudley-cli`, `dudley-dev`, `dudley-fonts`, `dudley-k8s`) | still owned by `dudley-os` | Preserved in `custom/brew/default.Brewfile`, `custom/brew/development.Brewfile`, and `custom/brew/fonts.Brewfile` |
+| `flatpaks/` | still owned by `dudley-os` | Preserved in `custom/flatpaks/default.preinstall` using the finpilot-style Flatpak preinstall format |
+| `vscode-extensions.list` | still owned by `dudley-os` | Preserved in `custom/system_files/etc/skel/.config/vscode-extensions.list` |
+| `build_files/developer/vscode-insiders.sh` | still owned by `dudley-os` | Preserved as product-only build logic in `build/10-build.sh`, with `Justfile`/`Containerfile` cache busting so `just build` refreshes the latest Insiders RPM |
+| `build_files/user-hooks/10-wallpaper-enforcement.sh` | still owned by `dudley-os` | Preserved as a first-login hook that consumes the shared Dudley wallpaper directory and prefers the shared `dudley-random-wallpaper` runtime when present |
+| `build_files/user-hooks/20-vscode-extensions.sh` | still owned by `dudley-os` | Preserved as a first-login VS Code Insiders extension installer using the product-managed extension list |
+| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | OCI/shared filesystem content moved to `dsb-common`; product-only build behavior remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo build logic plus product runtime manifests |
 
 ### Build System
 - Automated builds via GitHub Actions on every commit
@@ -334,6 +350,8 @@ The build order in `build/10-build.sh` is:
 4. **Local dudley-os product files** (this repo – first-login hooks, VS Code Insiders setup, local Brewfiles/Flatpaks/ujust)
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
+
+The `just build` flow also passes a `VSCODE_REFRESH_TOKEN` build arg so the Dudley-only VS Code Insiders install step stays fresh without moving that logic into `dsb-common`.
 
 ## Image Publishing
 

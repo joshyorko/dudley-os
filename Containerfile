@@ -50,6 +50,10 @@ COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-co
 # Base Image - GNOME included
 FROM ghcr.io/ublue-os/silverblue-main:latest@sha256:f8d5fd28aa7bb0ed9e17e98e4f9fb174b6961a2dc4a3113b78c5dff4af5bdf6f
 
+# Dudley product-specific build args
+ARG SHA_HEAD_SHORT="unknown"
+ARG VSCODE_REFRESH_TOKEN="static"
+
 ## Alternative base images, no desktop included (uncomment to use):
 # FROM ghcr.io/ublue-os/base-main:latest    
 # FROM quay.io/centos-bootc/centos-bootc:stream10
@@ -89,6 +93,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    echo "[dudley-vscode] Refresh token: ${VSCODE_REFRESH_TOKEN}" && \
     /ctx/build/10-build.sh
     
 ### LINTING
