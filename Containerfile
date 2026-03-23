@@ -78,6 +78,8 @@ ARG VSCODE_REFRESH_TOKEN="static"
 ##   1. dsb-common/shared
 ##   2. dsb-common/dudley
 ##   3. local dudley-os product files
+## Final assembly invokes the shared Dudley VS Code Insiders installer asset
+## from dsb-common rather than keeping the install logic inline here.
 ## Scripts are run in numerical order (10-build.sh, 20-example.sh, etc.)
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \

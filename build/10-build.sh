@@ -44,16 +44,8 @@ echo "::endgroup::"
 
 echo "::group:: Install Packages"
 
-# Dudley product-specific substrate glue retained in this thin repo:
-# install VS Code Insiders so the first-login extension hook can activate the
-# Dudley opinion payload that now lives in dsb-common.
-if ! rpm -q code-insiders &>/dev/null; then
-    readonly VSCODE_INSIDERS_RPM="/tmp/code-insiders-latest.rpm"
-    curl -fsSL -o "${VSCODE_INSIDERS_RPM}" \
-        "https://update.code.visualstudio.com/latest/linux-rpm-x64/insider"
-    dnf5 install -y --allowerasing "${VSCODE_INSIDERS_RPM}"
-    rm -f "${VSCODE_INSIDERS_RPM}"
-fi
+# Invoke the shared Dudley installer layered in from dsb-common.
+/usr/libexec/dudley/install-vscode-insiders.sh
 
 echo "::endgroup::"
 

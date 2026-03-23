@@ -17,11 +17,15 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
   - `/system_files/shared`
   - `/system_files/dudley`
 - Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
+- Dudley VS Code Insiders assets now come from `dsb-common`, including:
+  - `/usr/libexec/dudley/install-vscode-insiders.sh`
+  - `/usr/share/ublue-os/vscode-extensions.list`
+  - `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh`
 
 ### Product-specific Additions (this repo)
 - Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
 - Dudley-specific ujust wiring in `custom/ujust/`
-- Dudley-only first-login hooks and VS Code Insiders substrate glue in `custom/system_files/` and `build/10-build.sh`
+- Dudley-only local wallpaper enforcement glue in `custom/system_files/`
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
@@ -43,9 +47,9 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
 | `brew/` (`dudley-cli`, `dudley-dev`, `dudley-fonts`, `dudley-k8s`) | now owned by `dsb-common` | Dudley Homebrew manifests are consumed from `dsb-common/dudley/usr/share/ublue-os/homebrew/` rather than local `custom/brew/` data |
 | `flatpaks/` | now owned by `dsb-common` | Dudley Flatpak declarative payload is consumed from `dsb-common/dudley/etc/flatpak/preinstall.d/` rather than local `custom/flatpaks/` data |
 | `vscode-extensions.list` | now owned by `dsb-common` | Dudley extension payload is consumed from `dsb-common/dudley/usr/share/ublue-os/vscode-extensions.list` |
-| `build_files/developer/vscode-insiders.sh` | still owned by `dudley-os` | Preserved as substrate-specific build glue in `build/10-build.sh`, with `Justfile`/`Containerfile` cache busting so `just build` refreshes the latest Insiders RPM |
+| `build_files/developer/vscode-insiders.sh` | now owned by `dsb-common` | Dudley assembly now invokes the shared installer asset at `/usr/libexec/dudley/install-vscode-insiders.sh` during final assembly |
 | `build_files/user-hooks/10-wallpaper-enforcement.sh` | still owned by `dudley-os` | Preserved as a first-login hook that consumes the shared Dudley wallpaper directory and prefers the shared `dudley-random-wallpaper` runtime when present |
-| `build_files/user-hooks/20-vscode-extensions.sh` | still owned by `dudley-os` | Preserved as a first-login VS Code Insiders extension installer that activates the shared Dudley extension list when present |
+| `build_files/user-hooks/20-vscode-extensions.sh` | now owned by `dsb-common` | Dudley now relies on the shared hook asset at `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh` and keeps no local duplicate |
 | Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic |
 
 ### Build System
@@ -336,11 +340,11 @@ Your build scripts can access these files at:
 The build order in `build/10-build.sh` is:
 1. **dsb-common/shared** (organisation-wide baseline)
 2. **dsb-common/dudley** (Dudley shared-layer content such as wallpapers)
-3. **Local dudley-os product files** (this repo – first-login hooks, VS Code Insiders substrate glue, and local final-assembly wiring)
+3. **Local dudley-os product files** (this repo – remaining local wallpaper glue and final assembly wiring)
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
 
-The `just build` flow also passes a `VSCODE_REFRESH_TOKEN` build arg so the Dudley-only VS Code Insiders install step stays fresh without moving that substrate-specific glue into `dsb-common`.
+The `just build` flow still passes a `VSCODE_REFRESH_TOKEN` build arg so final assembly can refresh the shared Dudley VS Code Insiders installer execution without carrying the installer implementation in this repo.
 
 ## Image Publishing
 
