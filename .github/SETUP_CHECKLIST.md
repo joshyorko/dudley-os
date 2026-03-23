@@ -3,7 +3,7 @@
 ## Initial Setup
 
 ### 1. Rename Template
-- [ ] Update `finpilot` to your name in: Containerfile, Justfile, README.md, artifacthub-repo.yml
+- [x] Update `finpilot` to your name in: Containerfile, Justfile, README.md, artifacthub-repo.yml *(already done for `dudley-os`)*
 
 ### 2. Enable GitHub Actions
 - [ ] Settings → Actions → General → Enable workflows
@@ -18,7 +18,7 @@ git push origin main
 
 ### 4. Deploy
 ```bash
-sudo bootc switch --transport registry ghcr.io/YOUR_USERNAME/YOUR_REPO:stable
+sudo bootc switch --transport registry ghcr.io/joshyorko/dudley-os:stable
 sudo systemctl reboot
 ```
 
