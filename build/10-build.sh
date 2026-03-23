@@ -57,4 +57,10 @@ systemctl enable podman.socket
 
 echo "::endgroup::"
 
+echo "::group:: Dudley final metadata"
+
+/ctx/build/20-final-metadata.sh
+
+echo "::endgroup::"
+
 echo "Custom build complete!"

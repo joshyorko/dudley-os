@@ -24,11 +24,13 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 
 ### Product-specific Additions (this repo)
 - Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
+- Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
+- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
 *Last updated: 2026-03-23*
 

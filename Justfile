@@ -90,6 +90,7 @@ build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
     BUILD_ARGS=()
+    FINAL_IMAGE_REF="${METADATA_IMAGE:-ghcr.io/joshyorko/${image_name}}:${tag}"
 
     if git rev-parse --git-dir >/dev/null 2>&1; then
         GIT_SHA=$(git rev-parse --short HEAD)
@@ -99,6 +100,7 @@ build $target_image=image_name $tag=default_tag:
         BUILD_ARGS+=("--build-arg" "SHA_HEAD_SHORT=${GIT_SHA}")
     fi
 
+    BUILD_ARGS+=("--build-arg" "FINAL_IMAGE_REF=${FINAL_IMAGE_REF}")
     BUILD_ARGS+=("--build-arg" "VSCODE_REFRESH_TOKEN=$(date -u +%Y%m%d%H%M%S)")
 
     podman build \
