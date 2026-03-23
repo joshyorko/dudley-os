@@ -13,7 +13,7 @@ The main Dudley build applies filesystem layers in this order before any package
 3. `dsb-common/dudley`
 4. Local `custom/system_files` product glue
 
-That keeps Dudley opinion/payload in `dsb-common` while leaving only final assembly glue in this repo. Local ujust wiring is still consolidated here, but Dudley Brewfiles, Flatpak declarations, wallpapers, and VS Code extension payloads are expected to come from `dsb-common/dudley` at their final image paths.
+That keeps Dudley opinion/payload in `dsb-common` while leaving only final assembly glue in this repo. Local ujust wiring is still consolidated here, but Dudley Brewfiles, Flatpak declarations, wallpapers, the VS Code Insiders installer asset, the VS Code extension payload, and the shared first-login extension hook are expected to come from `dsb-common/dudley` at their final image paths.
 
 ## Included Scripts
 
