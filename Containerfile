@@ -32,6 +32,8 @@
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
+ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:c5cd234aa491c908beaf1626f5091f27a3e644722b5530a9265fe39008d5f187"
+
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx
 
@@ -43,10 +45,12 @@ COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-co
 
 # Base Image - inherit Bluefin DX directly so Bluefin userland, shell, MOTD,
 # image metadata, and developer tooling stay internally consistent.
-FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:c5cd234aa491c908beaf1626f5091f27a3e644722b5530a9265fe39008d5f187
+FROM ${BASE_IMAGE_REF}
 
 # Dudley product-specific build args
+ARG BASE_IMAGE_REF
 ARG SHA_HEAD_SHORT="unknown"
+ARG FINAL_IMAGE_REF="ghcr.io/joshyorko/dudley-os:stable"
 ARG VSCODE_REFRESH_TOKEN="static"
 
 ## Alternative base images (uncomment to use):
