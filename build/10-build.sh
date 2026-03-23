@@ -36,30 +36,19 @@ copy_layer "local dudley-os product files" "/ctx/custom/system_files"
 
 echo "::endgroup::"
 
-echo "::group:: Copy local Dudley overlays"
-
-# Enable nullglob for local overlay copy operations
-shopt -s nullglob
-
-# Copy Brewfiles to standard location
-mkdir -p /usr/share/ublue-os/homebrew/
-cp -f /ctx/custom/brew/*.Brewfile /usr/share/ublue-os/homebrew/
+echo "::group:: Wire local Dudley assembly glue"
 
 # Consolidate Just Files
 mkdir -p /usr/share/ublue-os/just/
 find /ctx/custom/ujust -iname '*.just' -exec printf "\n\n" \; -exec cat {} \; >> /usr/share/ublue-os/just/60-custom.just
 
-# Copy Flatpak preinstall files
-mkdir -p /etc/flatpak/preinstall.d/
-cp -f /ctx/custom/flatpaks/*.preinstall /etc/flatpak/preinstall.d/
-
 echo "::endgroup::"
 
 echo "::group:: Install Packages"
 
-# Dudley product-specific build behavior retained from the legacy monolith:
-# install VS Code Insiders so the first-login extension hook has a product
-# editor target without moving the logic into dsb-common.
+# Dudley product-specific substrate glue retained in this thin repo:
+# install VS Code Insiders so the first-login extension hook can activate the
+# Dudley opinion payload that now lives in dsb-common.
 if ! rpm -q code-insiders &>/dev/null; then
     readonly VSCODE_INSIDERS_RPM="/tmp/code-insiders-latest.rpm"
     curl -fsSL -o "${VSCODE_INSIDERS_RPM}" \
@@ -77,8 +66,5 @@ systemctl enable podman.socket
 # Example: systemctl mask unwanted-service
 
 echo "::endgroup::"
-
-# Restore default glob behavior
-shopt -u nullglob
 
 echo "Custom build complete!"

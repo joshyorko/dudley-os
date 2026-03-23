@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+hook_version="2026-03-23"
+if [[ -r /usr/lib/ublue/setup-services/libsetup.sh ]]; then
+    # shellcheck source=/dev/null
+    source /usr/lib/ublue/setup-services/libsetup.sh
+    if [[ "$(version-script wallpaper "${hook_version}")" == "skip" ]]; then
+        exit 0
+    fi
+fi
+
 randomizer_cmd="$(command -v dudley-random-wallpaper || true)"
 if [[ -z "${randomizer_cmd}" && -x /usr/local/bin/dudley-random-wallpaper ]]; then
     randomizer_cmd="/usr/local/bin/dudley-random-wallpaper"

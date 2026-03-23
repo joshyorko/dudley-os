@@ -59,7 +59,7 @@ configure-thing:
 # Groups organize commands in ujust help
 [group('Apps')]
 install-brewfile:
-    brew bundle --file /usr/share/ublue-os/homebrew/development.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
 ```
 
 ## Best Practices
@@ -107,7 +107,7 @@ interactive-command:
 ```just
 [group('Apps')]
 install-dev-tools:
-    brew bundle --file /usr/share/ublue-os/homebrew/development.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
 ```
 
 **See examples in [`custom-apps.just`](custom-apps.just)** for Brewfile shortcuts.
@@ -148,7 +148,7 @@ clean-containers:
 **Do not install packages via dnf5/rpm in ujust commands.** Bootc images are immutable and package installation should happen at build time in [`build/10-build.sh`](../../build/10-build.sh).
 
 For runtime package installation, use:
-- **Brewfiles** - Create shortcuts to Brewfiles in [`custom/brew/`](../brew/)
+- **Brewfiles** - Dudley’s shipped Brewfiles are expected from `dsb-common` and exposed at `/usr/share/ublue-os/homebrew/`
 - **Flatpak** - Install Flatpaks for GUI applications
 - **Containers** - Use toolbox/distrobox for development environments
 
@@ -156,7 +156,7 @@ Example Brewfile shortcut (from [`custom-apps.just`](custom-apps.just)):
 ```just
 [group('Apps')]
 install-fonts:
-    brew bundle --file /usr/share/ublue-os/homebrew/fonts.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-fonts.Brewfile
 ```
 
 ## Available Helpers
@@ -219,7 +219,7 @@ The included files provide starting examples:
 - **[`custom-system.just`](custom-system.just)** - System configuration commands
 
 These files show how to:
-- Create shortcuts to Brewfiles in [`custom/brew/`](../brew/)
+- Create shortcuts to Brewfiles provided in the final image at `/usr/share/ublue-os/homebrew/`
 - Install Flatpaks interactively
 - Configure system settings
 - Run maintenance tasks
