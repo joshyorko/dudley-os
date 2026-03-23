@@ -13,14 +13,16 @@ This image uses the **multi-stage build architecture** from @projectbluefin/dist
 Here are the changes from the base image (`ghcr.io/ublue-os/silverblue-main`). Dudley is assembled from:
 
 ### Shared Organisation Layer (dsb-common)
-- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time (`/oci/dsb-common`).
-- Shared just files, Brewfiles, and Flatpak preinstall lists from `dsb-common` are applied **before** any Dudley-specific customisations, so product overrides always win.
+- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
+  - `/system_files/shared`
+  - `/system_files/dudley`
+- Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
 
 ### Product-specific Additions (this repo)
 - Dudley-specific Brewfiles in `custom/brew/`
 - Dudley-specific Flatpak preinstall lists in `custom/flatpaks/`
 - Dudley-specific ujust shortcuts in `custom/ujust/`
-- Build-time packages via `build/10-build.sh`
+- Dudley-only first-login hooks and VS Code Insiders setup in `custom/system_files/` and `build/10-build.sh`
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
@@ -314,18 +316,22 @@ The Containerfile imports files from these OCI containers at build time:
 ```dockerfile
 COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
 COPY --from=ghcr.io/ublue-os/brew:latest         /system_files /oci/brew
-COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files /oci/dsb-common
+COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/dudley /oci/dsb-common/dudley
 ```
 
 Your build scripts can access these files at:
 - `/ctx/oci/common/` - Shared desktop configuration
 - `/ctx/oci/brew/` - Homebrew integration files
-- `/ctx/oci/dsb-common/` - DSB organisation-wide shared files
+- `/ctx/oci/dsb-common/shared/` - DSB organisation-wide shared files
+- `/ctx/oci/dsb-common/dudley/` - Dudley-specific shared-layer content
+- `/ctx/custom/system_files/` - Dudley product-only files that stay in this repo
 
 The build order in `build/10-build.sh` is:
-1. **dsb-common** shared files (organisation-wide baseline)
-2. **Bluefin/common** just files
-3. **Product-specific** custom files (this repo – can override anything above)
+1. **dsb-common/shared** (organisation-wide baseline)
+2. **projectbluefin/common** (`shared`, then `bluefin`)
+3. **dsb-common/dudley** (Dudley shared-layer content such as wallpapers)
+4. **Local dudley-os product files** (this repo – first-login hooks, VS Code Insiders setup, local Brewfiles/Flatpaks/ujust)
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
 
