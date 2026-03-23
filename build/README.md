@@ -11,9 +11,9 @@ The main Dudley build applies filesystem layers in this order before any package
 1. `dsb-common/shared`
 2. `projectbluefin/common`
 3. `dsb-common/dudley`
-4. Local `custom/system_files` plus the repo's Brewfiles, Flatpak preinstalls, and ujust overlays
+4. Local `custom/system_files` product glue
 
-That keeps shared content in `dsb-common` while leaving only product-specific behavior in this repo.
+That keeps Dudley opinion/payload in `dsb-common` while leaving only final assembly glue in this repo. Local ujust wiring is still consolidated here, but Dudley Brewfiles, Flatpak declarations, wallpapers, and VS Code extension payloads are expected to come from `dsb-common/dudley` at their final image paths.
 
 ## Included Scripts
 

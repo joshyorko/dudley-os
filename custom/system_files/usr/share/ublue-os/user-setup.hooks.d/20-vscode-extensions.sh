@@ -10,9 +10,10 @@ if [[ -r /usr/lib/ublue/setup-services/libsetup.sh ]]; then
     fi
 fi
 
+# The Dudley extension payload is expected to be layered in by dsb-common.
 command -v code-insiders >/dev/null 2>&1 || exit 0
 
-extensions_list="/etc/skel/.config/vscode-extensions.list"
+extensions_list="/usr/share/ublue-os/vscode-extensions.list"
 [[ -f "${extensions_list}" ]] || exit 0
 
 mkdir -p "${HOME}/.config"

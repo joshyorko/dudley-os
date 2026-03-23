@@ -10,30 +10,38 @@
 install-default-apps:
     #!/usr/bin/env bash
     echo "Installing default applications via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/default.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 
 # Install development tools via Homebrew
 [group('Apps')]
 install-dev-tools:
     #!/usr/bin/env bash
     echo "Installing development tools via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/development.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
 
 # Install fonts via Homebrew
 [group('Apps')]
 install-fonts:
     #!/usr/bin/env bash
     echo "Installing fonts via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/fonts.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-fonts.Brewfile
+
+# Install Kubernetes tools via Homebrew
+[group('Apps')]
+install-k8s-tools:
+    #!/usr/bin/env bash
+    echo "Installing Kubernetes tools via Homebrew..."
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-k8s.Brewfile
 
 # Install all Brewfiles at once
 [group('Apps')]
 install-all-brew:
     #!/usr/bin/env bash
     echo "Installing all applications from Brewfiles..."
-    brew bundle --file /usr/share/ublue-os/homebrew/default.Brewfile
-    brew bundle --file /usr/share/ublue-os/homebrew/development.Brewfile
-    brew bundle --file /usr/share/ublue-os/homebrew/fonts.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-cli.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-fonts.Brewfile
+    brew bundle --file /usr/share/ublue-os/homebrew/dudley-k8s.Brewfile
 
 # Install JetBrains Toolbox for managing JetBrains IDEs
 [group('Apps')]
