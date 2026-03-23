@@ -2,15 +2,15 @@
 
 A custom bootc operating system image for the DSB organisation, built on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be a **thin product image** that consumes shared configuration from [`dsb-common`](https://github.com/joshyorko/dsb-common) and adds Dudley-specific branding and tooling on top.
 
-This image uses the **multi-stage build architecture** from @projectbluefin/distroless, combining resources from multiple OCI containers for modularity and maintainability. See the [Architecture](#architecture) section below for details.
+This image uses a **thin-product multi-stage build**. Dudley inherits the full Bluefin DX base image, then layers in DSB shared configuration plus Dudley-specific payloads on top. See the [Architecture](#architecture) section below for details.
 
-**Unlike previous templates, you are not modifying Bluefin and making changes.**: You are assembling your own Bluefin in the same exact way that Bluefin, Aurora, and Bluefin LTS are built. This keeps the image-agnostic and desktop things we love about Bluefin in @projectbluefin/common, and the organisation-wide things in `dsb-common`.
+**Dudley now inherits Bluefin DX directly instead of reconstructing Bluefin from Silverblue plus partial layers.** This keeps Bluefin's terminal defaults, image metadata, MOTD tooling, and DX userland intact while still letting `dsb-common` and Dudley apply their opinionated changes.
 
 > Be the one who moves, not the one who is moved.
 
 ## What Makes Dudley Different?
 
-Here are the changes from the base image (`ghcr.io/ublue-os/silverblue-main`). Dudley is assembled from:
+Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley is assembled from:
 
 ### Shared Organisation Layer (dsb-common)
 - **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
@@ -115,9 +115,9 @@ Note: Image signing is disabled by default. Your images will build successfully 
 
 ### 4. Customize Your Image
 
-Choose your base image in `Containerfile` (line 23):
+Choose your base image in `Containerfile`:
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin:stable
+FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
 ```
 
 Add your packages in `build/10-build.sh`:
@@ -303,29 +303,24 @@ cosign verify --key cosign.pub ghcr.io/joshyorko/dudley-os:stable
 
 ## Architecture
 
-This template follows the **multi-stage build architecture** from @projectbluefin/distroless, as documented in the [Bluefin Contributing Guide](https://docs.projectbluefin.io/contributing/).
+This template now follows a **thin-product Bluefin layering model**. Dudley starts from Bluefin DX directly, then applies DSB shared and Dudley-specific layers during the build.
 
 ### Multi-Stage Build Pattern
 
 **Stage 1: Context (ctx)** - Combines resources from multiple sources:
 - Local build scripts (`/build`)
 - Local custom files (`/custom`)
-- **@projectbluefin/common** - Desktop configuration shared with Aurora
-- **@projectbluefin/branding** - Branding assets
-- **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite
-- **@ublue-os/brew** - Homebrew integration
 - **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
 
-**Stage 2: Base Image** - Default options:
-- `ghcr.io/ublue-os/silverblue-main:latest` (Fedora-based, default)
-- `quay.io/centos-bootc/centos-bootc:stream10` (CentOS-based alternative)
+**Stage 2: Base Image** - Default:
+- `ghcr.io/ublue-os/bluefin-dx:latest` (Bluefin GNOME + DX userland)
 
 ### Benefits of This Architecture
 
 - **Modularity**: Compose your image from reusable OCI containers
 - **Maintainability**: Update shared components independently
 - **Reproducibility**: Renovate automatically updates OCI tags to SHA digests
-- **Consistency**: Share components across Bluefin, Aurora, and custom images
+- **Consistency**: Keep Bluefin's shipped userland intact instead of partially rebuilding it
 - **Thin product images**: Common organisation config lives in `dsb-common`; product repos only contain what's unique
 
 ### OCI Container Resources
@@ -333,24 +328,19 @@ This template follows the **multi-stage build architecture** from @projectbluefi
 The Containerfile imports files from these OCI containers at build time:
 
 ```dockerfile
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/ublue-os/brew:latest         /system_files /oci/brew
 COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/shared /oci/dsb-common/shared
 COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/dudley /oci/dsb-common/dudley
 ```
 
 Your build scripts can access these files at:
-- `/ctx/oci/common/` - Shared desktop configuration
-- `/ctx/oci/brew/` - Homebrew integration files
 - `/ctx/oci/dsb-common/shared/` - DSB organisation-wide shared files
 - `/ctx/oci/dsb-common/dudley/` - Dudley-specific shared-layer content
 - `/ctx/custom/system_files/` - Dudley product-only files that stay in this repo
 
 The build order in `build/10-build.sh` is:
 1. **dsb-common/shared** (organisation-wide baseline)
-2. **projectbluefin/common** (`shared`, then `bluefin`)
-3. **dsb-common/dudley** (Dudley shared-layer content such as wallpapers)
-4. **Local dudley-os product files** (this repo – remaining local wallpaper glue and final assembly wiring)
+2. **dsb-common/dudley** (Dudley shared-layer content such as wallpapers)
+3. **Local dudley-os product files** (this repo – remaining local wallpaper glue and final assembly wiring)
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
 
