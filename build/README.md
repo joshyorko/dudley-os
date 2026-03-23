@@ -6,6 +6,15 @@ This directory contains build scripts that run during image creation. Scripts ar
 
 Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`) and run in ascending order during the container build process.
 
+The main Dudley build applies filesystem layers in this order before any package installs:
+
+1. `dsb-common/shared`
+2. `projectbluefin/common`
+3. `dsb-common/dudley`
+4. Local `custom/system_files` plus the repo's Brewfiles, Flatpak preinstalls, and ujust overlays
+
+That keeps shared content in `dsb-common` while leaving only product-specific behavior in this repo.
+
 ## Included Scripts
 
 - **`10-build.sh`** - Main build script for base system modifications, package installation, and service configuration
