@@ -1,26 +1,33 @@
-# finpilot
+# dudley-os
 
-A template for building custom bootc operating system images based on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be used manually, but is optimized to be bootstraped by GitHub Copilot. After set up you'll have your own custom Linux. 
+A custom bootc operating system image for the DSB organisation, built on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be a **thin product image** that consumes shared configuration from [`dsb-common`](https://github.com/joshyorko/dsb-common) and adds Dudley-specific branding and tooling on top.
 
-This template uses the **multi-stage build architecture** from , combining resources from multiple OCI containers for modularity and maintainability. See the [Architecture](#architecture) section below for details.
+This image uses the **multi-stage build architecture** from @projectbluefin/distroless, combining resources from multiple OCI containers for modularity and maintainability. See the [Architecture](#architecture) section below for details.
 
-**Unlike previous templates, you are not modifying Bluefin and making changes.**: You are assembling your own Bluefin in the same exact way that Bluefin, Aurora, and Bluefin LTS are built. This is way more flexible and better for everyone since the image-agnostic and desktop things we love about Bluefin lives in @projectbluefin/common. 
-
- Instead, you create your own OS repository based on this template, allowing full customization while leveraging Bluefin's robust build system and shared components.
+**Unlike previous templates, you are not modifying Bluefin and making changes.**: You are assembling your own Bluefin in the same exact way that Bluefin, Aurora, and Bluefin LTS are built. This keeps the image-agnostic and desktop things we love about Bluefin in @projectbluefin/common, and the organisation-wide things in `dsb-common`.
 
 > Be the one who moves, not the one who is moved.
 
-## Guided Copilot Mode
+## What Makes Dudley Different?
 
-Here are the steps to guide copilot to make your own repo, or just use it like a regular image template.
+Here are the changes from the base image (`ghcr.io/ublue-os/silverblue-main`). Dudley is assembled from:
 
-1. Click the green "Use this as a template" button and create a new repository
-2. Select your owner, pick a repo name for your OS, and a description
-3. In the "Jumpstart your project with Copilot (optional)" add this, modify to your liking:
+### Shared Organisation Layer (dsb-common)
+- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time (`/oci/dsb-common`).
+- Shared just files, Brewfiles, and Flatpak preinstall lists from `dsb-common` are applied **before** any Dudley-specific customisations, so product overrides always win.
 
-```
-Use @projectbluefin/finpilot as a template, name the OS the repository name. Ensure the entire operating system is bootstrapped. Ensure all github actions are enabled and running.  Ensure the README has the github setup instructions for cosign and the other steps required to finish the task.
-```
+### Product-specific Additions (this repo)
+- Dudley-specific Brewfiles in `custom/brew/`
+- Dudley-specific Flatpak preinstall lists in `custom/flatpaks/`
+- Dudley-specific ujust shortcuts in `custom/ujust/`
+- Build-time packages via `build/10-build.sh`
+
+### Configuration Changes
+- `podman.socket` enabled by default for rootless container workflows
+
+*Last updated: 2026-03-23*
+
+---
 
 ## What's Included
 
@@ -67,7 +74,7 @@ Click "Use this template" to create a new repository from this template.
 
 ### 2. Rename the Project
 
-Important: Change `finpilot` to your repository name in these 6 files:
+The project name `dudley-os` is already set in all required files. If you fork this for a different product, change it in these 6 files:
 
 1. `Containerfile` (line 4): `# Name: your-repo-name`
 2. `Justfile` (line 1): `export image_name := env("IMAGE_NAME", "your-repo-name")`
@@ -118,7 +125,7 @@ All changes should be made via pull requests:
 
 Switch to your image:
 ```bash
-sudo bootc switch ghcr.io/your-username/your-repo-name:stable
+sudo bootc switch ghcr.io/joshyorko/dudley-os:stable
 sudo systemctl reboot
 ```
 
@@ -263,7 +270,7 @@ Your workflow will:
 
 Users can verify your images with:
 ```bash
-cosign verify --key cosign.pub ghcr.io/your-username/your-repo-name:stable
+cosign verify --key cosign.pub ghcr.io/joshyorko/dudley-os:stable
 ```
 
 ## Detailed Guides
@@ -286,6 +293,7 @@ This template follows the **multi-stage build architecture** from @projectbluefi
 - **@projectbluefin/branding** - Branding assets
 - **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite
 - **@ublue-os/brew** - Homebrew integration
+- **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
 
 **Stage 2: Base Image** - Default options:
 - `ghcr.io/ublue-os/silverblue-main:latest` (Fedora-based, default)
@@ -297,34 +305,63 @@ This template follows the **multi-stage build architecture** from @projectbluefi
 - **Maintainability**: Update shared components independently
 - **Reproducibility**: Renovate automatically updates OCI tags to SHA digests
 - **Consistency**: Share components across Bluefin, Aurora, and custom images
+- **Thin product images**: Common organisation config lives in `dsb-common`; product repos only contain what's unique
 
 ### OCI Container Resources
 
-The template imports files from these OCI containers at build time:
+The Containerfile imports files from these OCI containers at build time:
 
 ```dockerfile
-COPY --from=ghcr.io/ublue-os/base-main:latest /system_files /oci/base
 COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+COPY --from=ghcr.io/ublue-os/brew:latest         /system_files /oci/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files /oci/dsb-common
 ```
 
 Your build scripts can access these files at:
-- `/ctx/oci/base/` - Base system configuration
 - `/ctx/oci/common/` - Shared desktop configuration
-- `/ctx/oci/branding/` - Branding assets
-- `/ctx/oci/artwork/` - Artwork files
 - `/ctx/oci/brew/` - Homebrew integration files
+- `/ctx/oci/dsb-common/` - DSB organisation-wide shared files
+
+The build order in `build/10-build.sh` is:
+1. **dsb-common** shared files (organisation-wide baseline)
+2. **Bluefin/common** just files
+3. **Product-specific** custom files (this repo – can override anything above)
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
+
+## Image Publishing
+
+Images are automatically built and pushed to the GitHub Container Registry on every push to `main`:
+
+```
+ghcr.io/joshyorko/dudley-os:stable
+ghcr.io/joshyorko/dudley-os:stable.YYYYMMDD
+ghcr.io/joshyorko/dudley-os:YYYYMMDD
+```
+
+Pull requests build a test image tagged `:pr-<number>` but **do not** push to the registry.
+
+To deploy on a running bootc system:
+
+```bash
+sudo bootc switch ghcr.io/joshyorko/dudley-os:stable
+sudo systemctl reboot
+```
 
 ## Local Testing
 
 Test your changes before pushing:
 
 ```bash
-just build              # Build container image
-just build-qcow2        # Build VM disk image
-just run-vm-qcow2       # Test in browser-based VM
+just build              # Build container image locally
+just build-qcow2        # Build QCOW2 VM disk image
+just run-vm-qcow2       # Launch image in a browser-based VM
+```
+
+Full workflow:
+
+```bash
+just build && just build-qcow2 && just run-vm-qcow2
 ```
 
 ## Community
