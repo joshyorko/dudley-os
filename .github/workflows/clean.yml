@@ -1,9 +1,7 @@
 name: Cleanup Old Images
 on:
-  schedule:
-    - cron: "0 0 * * 0" # Weekly on Sunday at midnight UTC
+  
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
 
