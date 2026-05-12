@@ -6,9 +6,10 @@ final_image_ref="${FINAL_IMAGE_REF:-ghcr.io/joshyorko/dudley-os:stable}"
 base_image_ref="${BASE_IMAGE_REF:-ghcr.io/ublue-os/bluefin-dx:latest}"
 git_commit="${SHA_HEAD_SHORT:-unknown}"
 
-manifest_path="/etc/dudley/build-manifest.json"
-image_info_path="/usr/share/ublue-os/image-info.json"
-os_release_path="/usr/lib/os-release"
+manifest_path="${MANIFEST_PATH:-/etc/dudley/build-manifest.json}"
+image_info_path="${IMAGE_INFO_PATH:-/usr/share/ublue-os/image-info.json}"
+os_release_path="${OS_RELEASE_FILE:-/usr/lib/os-release}"
+dudley_build_info_cmd="${DUDLEY_BUILD_INFO_CMD:-/usr/bin/dudley-build-info}"
 repo_url="https://github.com/joshyorko/dudley-os"
 support_url="${repo_url}/issues"
 
@@ -86,13 +87,14 @@ build_manifest() {
             }'
     )"
 
-    local wallpaper_hook="/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh"
+    local wallpaper_hook="${WALLPAPER_HOOK:-/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh}"
+    local wallpaper_dir="${WALLPAPER_DIR:-/usr/share/backgrounds/dudley}"
     if [[ -f "${wallpaper_hook}" ]]; then
         local wallpaper_inputs=("${wallpaper_hook}")
         local wallpaper_count=0
 
-        if [[ -d /usr/share/backgrounds/dudley ]]; then
-            mapfile -t wallpaper_files < <(find /usr/share/backgrounds/dudley -maxdepth 1 -type f | sort)
+        if [[ -d "${wallpaper_dir}" ]]; then
+            mapfile -t wallpaper_files < <(find "${wallpaper_dir}" -maxdepth 1 -type f | sort)
             if [[ "${#wallpaper_files[@]}" -gt 0 ]]; then
                 wallpaper_inputs+=("${wallpaper_files[@]}")
                 wallpaper_count="${#wallpaper_files[@]}"
@@ -109,8 +111,8 @@ build_manifest() {
         manifest="$(manifest_add_hook "${manifest}" "wallpaper" "${wallpaper_hash}" "${wallpaper_deps}" "${wallpaper_meta}")"
     fi
 
-    local vscode_hook="/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh"
-    local vscode_list="/usr/share/ublue-os/vscode-extensions.list"
+    local vscode_hook="${VSCODE_HOOK:-/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh}"
+    local vscode_list="${VSCODE_EXTENSIONS_LIST:-/usr/share/ublue-os/vscode-extensions.list}"
     if [[ -f "${vscode_hook}" ]]; then
         local vscode_inputs=("${vscode_hook}")
         local extension_count=0
@@ -157,8 +159,8 @@ stamp_image_identity() {
         fedora_version="$(jq -r '."fedora-version" // empty' "${image_info_path}")"
     fi
     if [[ -z "${fedora_version:-}" ]]; then
-        # shellcheck disable=SC1091
-        fedora_version="$(. /etc/os-release && printf '%s' "${VERSION_ID:-unknown}")"
+        # shellcheck source=/dev/null
+        fedora_version="$(. "${os_release_path}" && printf '%s' "${VERSION_ID:-unknown}")"
     fi
 
     local image_flavor="dx"
@@ -167,6 +169,8 @@ stamp_image_identity() {
         existing_image_info="$(cat "${image_info_path}")"
         image_flavor="$(jq -r '."image-flavor" // "dx"' "${image_info_path}")"
     fi
+
+    install -d -m 0755 "$(dirname "${image_info_path}")"
 
     jq \
         --arg image_name "${image_name}" \
@@ -189,31 +193,27 @@ stamp_image_identity() {
         }' <<<"${existing_image_info}" > "${image_info_path}"
 
     if [[ -f "${os_release_path}" ]]; then
-        sed -i "s/^VARIANT_ID=.*/VARIANT_ID=${image_name}/" "${os_release_path}"
-        sed -i 's/^NAME=.*/NAME="Dudley OS"/' "${os_release_path}"
-        sed -i "s/^PRETTY_NAME=.*/PRETTY_NAME=\"Dudley OS (${image_tag})\"/" "${os_release_path}"
-        sed -i "s|^HOME_URL=.*|HOME_URL=\"${repo_url}\"|" "${os_release_path}"
-        sed -i "s|^DOCUMENTATION_URL=.*|DOCUMENTATION_URL=\"${repo_url}\"|" "${os_release_path}"
-        sed -i "s|^SUPPORT_URL=.*|SUPPORT_URL=\"${support_url}\"|" "${os_release_path}"
-        sed -i "s|^BUG_REPORT_URL=.*|BUG_REPORT_URL=\"${support_url}\"|" "${os_release_path}"
+        set_os_release_value "VARIANT_ID" "${base_image_name}"
+        set_os_release_value "NAME" "Dudley OS"
+        set_os_release_value "PRETTY_NAME" "Dudley OS (${image_tag})"
+        set_os_release_value "HOME_URL" "${repo_url}"
+        set_os_release_value "DOCUMENTATION_URL" "${repo_url}"
+        set_os_release_value "SUPPORT_URL" "${support_url}"
+        set_os_release_value "BUG_REPORT_URL" "${support_url}"
+        set_os_release_value "IMAGE_ID" "${image_name}"
+        set_os_release_value "IMAGE_VERSION" "${image_tag}"
+        set_os_release_value "BUILD_ID" "${git_commit}"
+    fi
+}
 
-        if grep -q '^IMAGE_ID=' "${os_release_path}"; then
-            sed -i "s/^IMAGE_ID=.*/IMAGE_ID=\"${image_name}\"/" "${os_release_path}"
-        else
-            echo "IMAGE_ID=\"${image_name}\"" >> "${os_release_path}"
-        fi
+set_os_release_value() {
+    local key="$1"
+    local value="$2"
 
-        if grep -q '^IMAGE_VERSION=' "${os_release_path}"; then
-            sed -i "s/^IMAGE_VERSION=.*/IMAGE_VERSION=\"${image_tag}\"/" "${os_release_path}"
-        else
-            echo "IMAGE_VERSION=\"${image_tag}\"" >> "${os_release_path}"
-        fi
-
-        if grep -q '^BUILD_ID=' "${os_release_path}"; then
-            sed -i "s/^BUILD_ID=.*/BUILD_ID=\"${git_commit}\"/" "${os_release_path}"
-        else
-            echo "BUILD_ID=\"${git_commit}\"" >> "${os_release_path}"
-        fi
+    if grep -q "^${key}=" "${os_release_path}"; then
+        sed -i "s|^${key}=.*|${key}=\"${value}\"|" "${os_release_path}"
+    else
+        printf '%s="%s"\n' "${key}" "${value}" >> "${os_release_path}"
     fi
 }
 
@@ -221,5 +221,5 @@ build_manifest
 stamp_image_identity
 
 jq -e '.build.image and .build.base and .build.commit' "${manifest_path}" >/dev/null
-/usr/bin/dudley-build-info --json >/dev/null
+"${dudley_build_info_cmd}" --json >/dev/null
 jq -e '."image-name" == "dudley-os" and ."image-vendor" == "joshyorko"' "${image_info_path}" >/dev/null

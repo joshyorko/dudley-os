@@ -42,6 +42,16 @@ find /ctx/custom/ujust -iname '*.just' -exec printf "\n\n" \; -exec cat {} \; >>
 
 echo "::endgroup::"
 
+echo "::group:: Compile desktop defaults"
+
+if command -v dconf >/dev/null 2>&1; then
+    dconf update || echo "WARNING: dconf update failed"
+else
+    echo "WARNING: dconf command not found, skipping dconf database update"
+fi
+
+echo "::endgroup::"
+
 echo "::group:: Install Packages"
 
 # Invoke the shared Dudley installer layered in from dsb-common.

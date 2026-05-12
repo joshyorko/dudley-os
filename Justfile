@@ -21,6 +21,17 @@ check:
     echo "Checking syntax: Justfile"
     just --unstable --fmt --check -f Justfile
 
+# Run unit tests
+[group('Test')]
+test-unit:
+    #!/usr/bin/bash
+    set -euo pipefail
+    bash tests/test-final-metadata.sh
+
+# Run validation and unit tests
+[group('Test')]
+test: check test-unit
+
 # Fix Just Syntax
 [group('Just')]
 fix:
