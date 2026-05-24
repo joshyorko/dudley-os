@@ -1,37 +1,35 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
+    "config:best-practices"
   ],
 
-  // Do not rebase when the default branch is updated
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+
   "rebaseWhen": "never",
 
-  customManagers: [
+  "customManagers": [
     {
-      customType: 'regex',
-      description: 'Match container images in Justfile with tag and digest',
-      managerFilePatterns: [
-        '^Justfile$',
+      "customType": "regex",
+      "managerFilePatterns": ["/^Justfile$/"],
+      "matchStrings": [
+        "(?<justName>.+?)\\s:=\\s(?:env\\(.+?,\\s)?[\"'](?<packageName>\\S+?):(?<currentValue>\\S+?)@(?<currentDigest>sha256:[a-f0-9]+?)[\"']\\)?"
       ],
-      matchStrings: [
-        '(?<justName>.+?)\\s:=\\s(?:env\\(.+?,\\s)?["\'](?<packageName>\\S+?):(?<currentValue>\\S+?)@(?<currentDigest>sha256:[a-f0-9]+?)["\']\\)?',
-      ],
-      datasourceTemplate: 'docker',
+      "datasourceTemplate": "docker"
     },
     {
-      customType: 'regex',
-      description: 'Match container images in Justfile run_args without tag or digest',
-      managerFilePatterns: [
-        '^Justfile$',
+      "customType": "regex",
+      "managerFilePatterns": ["/^Justfile$/"],
+      "matchStrings": [
+        "export bib_image := env\\(\"BIB_IMAGE\", \"(?<depName>quay\\.io/centos-bootc/bootc-image-builder):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\"\\)"
       ],
-      matchStrings: [
-        'run_args\\+=\\((?<packageName>[a-zA-Z0-9._:/-]+):?(?<currentValue>\\S+?)\\)',
-      ],
-      datasourceTemplate: 'docker',
-      versioningTemplate: 'docker',
-    },
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
   ],
+
+  "platformAutomerge": true,
 
   "packageRules": [
     {
@@ -39,25 +37,27 @@
       "matchUpdateTypes": ["pin", "pinDigest"]
     },
     {
-      "description": "Auto-merge digest updates for base image and trigger build",
       "automerge": true,
       "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["digest"],
-      "matchFileNames": ["Containerfile"],
-      "labels": ["renovate", "automerge"],
+      "matchUpdateTypes": ["digest"]
     },
     {
-      "description": "Disable automerge for all rechunk updates to allow manual review",
-      "matchUpdateTypes": ["major", "minor", "patch", "digest", "pinDigest"],
-      "matchPackageNames": ["ghcr.io/hhd-dev/rechunk"],
-      "automerge": false
+      "automerge": true,
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"]
     },
     {
-      "description": "Enable GitHub Actions updates since they are now pinned with SHA",
-      "enabled": true,
-      "matchUpdateTypes": ["digest", "pinDigest", "pin", "major", "minor", "patch"],
-      "matchDepTypes": ["action"],
-      "matchFileNames": [".github/workflows/**.yaml", ".github/workflows/**.yml"],
+      "groupName": "Universal Blue dependencies",
+      "matchPackageNames": ["/^ghcr\\.io\\/ublue-os\\//"]
     },
+    {
+      "groupName": "bootc builder image",
+      "matchPackageNames": ["quay.io/centos-bootc/bootc-image-builder"]
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"]
+    }
   ]
 }

@@ -32,7 +32,7 @@
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
-ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:c5cd234aa491c908beaf1626f5091f27a3e644722b5530a9265fe39008d5f187"
+ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:074556d7983dbf4f47410388cc469a2d5c6321522d45c1ad36b93add8ade901a"
 
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx
@@ -82,8 +82,8 @@ ARG VSCODE_REFRESH_TOKEN="static"
 ##   1. dsb-common/shared
 ##   2. dsb-common/dudley
 ##   3. local dudley-os product files
-## Final assembly invokes the shared Dudley VS Code Insiders installer asset
-## from dsb-common rather than keeping the install logic inline here.
+## Runtime developer tooling opinions come from dsb-common Brewfiles and hooks
+## rather than keeping installer logic inline here.
 ## Scripts are run in numerical order (10-build.sh, 20-example.sh, etc.)
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \

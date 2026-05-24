@@ -1,4 +1,4 @@
-# Copilot Instructions for finpilot bootc Image Template
+# Copilot Instructions for dudley-os bootc Image
 
 ## CRITICAL: GitHub API Usage
 
@@ -31,9 +31,9 @@
 
 **When this repository is used as a template, you MUST:**
 
-### 1. Rename ALL instances of `finpilot`
+### 1. Rename ALL project identity references
 
-**Source of truth**: `Containerfile` line 9: `# Name: finpilot`
+**Source of truth**: `Containerfile` line 4: `# Name: dudley-os`
 
 **Files to update:**
 - `Containerfile` (line 9)
@@ -1104,5 +1104,5 @@ Assisted-by: Claude 3.5 Sonnet via GitHub Copilot
 ---
 
 **Last Updated**: 2025-11-14  
-**Template Version**: finpilot (Enhanced with comprehensive Copilot instructions)  
+**Template lineage**: based on projectbluefin/finpilot (enhanced with comprehensive Copilot instructions)
 **Maintainer**: Universal Blue Community

@@ -17,13 +17,15 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
   - `/system_files/shared`
   - `/system_files/dudley`
 - Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
+- Dudley's Google Chrome RPM repository definition now comes from `dsb-common` at `/system_files/dudley/etc/yum.repos.d/google-chrome.repo`.
 - Dudley VS Code Insiders assets now come from `dsb-common`, including:
-  - `/usr/libexec/dudley/install-vscode-insiders.sh`
+  - `/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
   - `/usr/share/ublue-os/vscode-extensions.list`
   - `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh`
 
 ### Product-specific Additions (this repo)
 - Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
+- Google Chrome is baked into the final image from the shared Dudley RPM repository definition in `dsb-common`; final assembly disables the repo after install so Chrome updates remain image-build controlled
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
@@ -32,7 +34,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - `podman.socket` enabled by default for rootless container workflows
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-03-23*
+*Last updated: 2026-05-24*
 
 ---
 
@@ -49,10 +51,10 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
 | `brew/` (`dudley-cli`, `dudley-dev`, `dudley-fonts`, `dudley-k8s`) | now owned by `dsb-common` | Dudley Homebrew manifests are consumed from `dsb-common/dudley/usr/share/ublue-os/homebrew/` rather than local `custom/brew/` data |
 | `flatpaks/` | now owned by `dsb-common` | Dudley Flatpak declarative payload is consumed from `dsb-common/dudley/etc/flatpak/preinstall.d/` rather than local `custom/flatpaks/` data |
 | `vscode-extensions.list` | now owned by `dsb-common` | Dudley extension payload is consumed from `dsb-common/dudley/usr/share/ublue-os/vscode-extensions.list` |
-| `build_files/developer/vscode-insiders.sh` | now owned by `dsb-common` | Dudley assembly now invokes the shared installer asset at `/usr/libexec/dudley/install-vscode-insiders.sh` during final assembly |
+| `build_files/developer/vscode-insiders.sh` | retired | VS Code Insiders is now a Homebrew cask opinion in `dsb-common` and installs through the Dudley dev Brewfile rather than final image assembly |
 | `build_files/user-hooks/10-wallpaper-enforcement.sh` | still owned by `dudley-os` | Preserved as a first-login hook that consumes the shared Dudley wallpaper directory and prefers the shared `dudley-random-wallpaper` runtime when present |
 | `build_files/user-hooks/20-vscode-extensions.sh` | now owned by `dsb-common` | Dudley now relies on the shared hook asset at `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh` and keeps no local duplicate |
-| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic |
+| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic. Google Chrome is the current product-level baked package and is installed here using the shared Dudley repo definition from `dsb-common` |
 
 ### Build System
 - Automated builds via GitHub Actions on every commit
@@ -346,7 +348,7 @@ The build order in `build/10-build.sh` is:
 
 **Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
 
-The `just build` flow still passes a `VSCODE_REFRESH_TOKEN` build arg so final assembly can refresh the shared Dudley VS Code Insiders installer execution without carrying the installer implementation in this repo.
+VS Code Insiders is installed at runtime through the Dudley dev Brewfile from `dsb-common`; final image assembly no longer downloads or installs the editor RPM.
 
 ## Image Publishing
 
