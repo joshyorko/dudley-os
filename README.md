@@ -398,6 +398,16 @@ dagger call metadata
 dagger call release --publish=false
 ```
 
+Shortcuts are available through `just`:
+
+```bash
+just dagger-metadata
+just dagger-build
+just dagger-release-dry-run
+just dagger-publish-local
+just dagger-release
+```
+
 Run the local release path against GHCR after authenticating with a token:
 
 ```bash
