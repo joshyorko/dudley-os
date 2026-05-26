@@ -23,7 +23,7 @@ Dakota/BuildStream work is out of scope for this repository unless the user expl
 
 This repo runs self-hosted Renovate from `.github/workflows/renovate.yml`.
 
-Use the repository secret `RENOVATE_TOKEN` for a Dudley-owned bot account or GitHub App installation. If the secret is absent, the workflow falls back to `github.token`, which is useful for smoke tests but will not make pull requests appear as a Dudley-branded bot.
+Use the repository secret `RENOVATE_TOKEN` for a Dudley-owned bot account or GitHub App installation. If the secret is absent, the workflow falls back to `github.token`, which is useful for smoke tests but will not make pull requests appear as a Dudley-branded bot. Bot tokens must be able to read Dependabot/vulnerability alerts or Renovate will warn that vulnerability alerts are inaccessible.
 
 ## CRITICAL: Pre-Commit Checklist
 
