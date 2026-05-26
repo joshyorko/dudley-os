@@ -191,19 +191,20 @@ This creates two files:
    - Name: `SIGNING_SECRET`
    - Value: Paste the entire contents of `cosign.key`
    - Click "Add secret"
+   - Add `SIGNING_PASSWORD` with the cosign key password only when the key is encrypted; leave it unset for an unencrypted key
 
 3. Replace the contents of `cosign.pub` with your public key:
    - Open `cosign.pub` in your repository
    - Replace the placeholder with your actual public key
    - Commit and push the change
 
-4. Enable signing in the workflow:
-   - Edit `.github/workflows/build.yml`
-   - Find the "OPTIONAL: Image Signing with Cosign" section.
-   - Uncomment the steps to install Cosign and sign the image (remove the `#` from the beginning of each line in that section).
-   - Commit and push the change
+4. Run the release pipeline:
+   - No workflow edit is required.
+   - The Dagger release step detects `SIGNING_SECRET`.
+   - When the secret exists, Dagger signs the pushed digest refs and attaches SBOM/SLSA provenance attestations.
+   - Without the secret, Dagger still builds and publishes, but skips signing and attestations.
 
-5. Your next build will produce signed images!
+5. Your next default-branch release will produce signed images and attestations.
 
 Important: Never commit `cosign.key` to the repository. It's already in `.gitignore`.
 
@@ -222,14 +223,8 @@ Ready to take your custom OS to production? Enable these features for enhanced s
 - [ ] **Enable SBOM Attestation** (Recommended)
   - Generates Software Bill of Materials for supply chain security
   - Provides transparency about what's in your image
-  - Requires image signing to be enabled first
-  - To enable:
-    1. First complete image signing setup above
-    2. Edit `.github/workflows/build.yml`
-    3. Find the "OPTIONAL: SBOM Attestation" section around line 232
-    4. Uncomment the "Add SBOM Attestation" step
-    5. Commit and push
-  - Status: **Disabled by default** (requires signing first)
+  - The Dagger release pipeline generates and attests the SBOM automatically when `SIGNING_SECRET` is configured
+  - Status: **Enabled by signing setup**
 
 - [ ] **Enable Image Rechunking** (Recommended)
   - Optimizes bootc image layers for better update performance
@@ -367,7 +362,7 @@ ghcr.io/joshyorko/dudley-os:stable.YYYYMMDD
 ghcr.io/joshyorko/dudley-os:YYYYMMDD
 ```
 
-Pull requests build a test image tagged `:pr-<number>` but **do not** push to the registry.
+Pull requests run the Dagger Buildah build for validation but **do not** push to the registry.
 
 To deploy on a running bootc system:
 
@@ -385,6 +380,48 @@ just build              # Build container image locally
 just build-qcow2        # Build QCOW2 VM disk image
 just run-vm-qcow2       # Launch image in a browser-based VM
 ```
+
+### Portable Dagger Release Pipeline
+
+GitHub Actions is now only the hosted runner. The release behavior lives in the
+repo-local Dagger module, so the same pipeline can run locally, in GitHub
+Actions, GitLab CI, or against another OCI registry:
+
+```bash
+dagger functions
+dagger call metadata
+dagger call release --publish=false
+```
+
+Release to GHCR after authenticating with a token:
+
+```bash
+dagger call release \
+  --registry ghcr.io/joshyorko \
+  --registry-username "$GITHUB_ACTOR" \
+  --registry-password env:GITHUB_TOKEN \
+  --signing-key env:SIGNING_SECRET \
+  --signing-password env:SIGNING_PASSWORD \
+  --source-uri https://github.com/joshyorko/dudley-os
+```
+
+Release to another registry without code changes:
+
+```bash
+dagger call release --registry registry.gitlab.com/group --publish=false
+dagger call release --registry localhost:5000 --sign=false --attest=false
+```
+
+The Dagger module exposes `metadata`, `build`, `publish`, `sbom`,
+`attest-sbom`, `attest-provenance`, `sign`, and `release`. The release path
+uses Buildah from `quay.io/buildah/stable:v1.41`, builds this repo's
+Docker-format `Containerfile`, keeps the pinned Bluefin base image and pinned
+`dsb-common` OCI resource from the Containerfile, applies the OCI labels,
+publishes `stable`, `stable.YYYYMMDD`, and `YYYYMMDD`, generates a Trivy SPDX
+JSON SBOM, and uses cosign for key-based signing and SBOM/SLSA provenance
+attestations when `--signing-key` is provided. Loopback registries
+(`localhost`, `127.0.0.1`, and `[::1]`) publish with `--tls-verify=false`; all
+other registries use TLS verification.
 
 Full workflow:
 
