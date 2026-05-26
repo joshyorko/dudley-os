@@ -27,14 +27,16 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
 - Google Chrome is baked into the final image from the shared Dudley RPM repository definition in `dsb-common`; final assembly disables the repo after install so Chrome updates remain image-build controlled
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
-- Dudley-specific ujust wiring in `custom/ujust/`
+- Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
+- GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
+- First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-05-24*
+*Last updated: 2026-05-26*
 
 ---
 
@@ -76,7 +78,7 @@ Dependency updates are handled by the self-hosted GitHub Actions workflow in `.g
 
 ### Homebrew Integration
 - Dudley’s shipped Brewfiles are expected from the `dsb-common` Dudley layer at `/usr/share/ublue-os/homebrew/`
-- Includes curated collections: development tools, fonts, CLI utilities. Go nuts.
+- Includes curated collections: CLI utilities, development tools, IDE/editor tools, fonts, Kubernetes tools, and opt-in AI/agent tools. Go nuts.
 - Users install packages at runtime with `brew bundle`, aliased to premade `ujust commands`
 - See [custom/brew/README.md](custom/brew/README.md) for details
 

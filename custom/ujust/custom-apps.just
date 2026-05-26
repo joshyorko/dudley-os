@@ -8,61 +8,37 @@
 # Install default applications via Homebrew
 [group('Apps')]
 install-default-apps:
-    #!/usr/bin/env bash
-    echo "Installing default applications via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-cli.Brewfile
+    @ujust dudley brew cli
 
 # Install development tools via Homebrew
 [group('Apps')]
 install-dev-tools:
-    #!/usr/bin/env bash
-    echo "Installing development tools via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
+    @ujust dudley brew dev
+
+# Install IDE and editor tools via Homebrew
+[group('Apps')]
+install-ide-tools:
+    @ujust dudley brew ide
+
+# Install AI and agent tools via Homebrew
+[group('Apps')]
+install-ai-tools:
+    @ujust dudley brew ai
 
 # Install fonts via Homebrew
 [group('Apps')]
 install-fonts:
-    #!/usr/bin/env bash
-    echo "Installing fonts via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-fonts.Brewfile
+    @ujust dudley brew fonts
 
 # Install Kubernetes tools via Homebrew
 [group('Apps')]
 install-k8s-tools:
-    #!/usr/bin/env bash
-    echo "Installing Kubernetes tools via Homebrew..."
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-k8s.Brewfile
+    @ujust dudley brew k8s
 
 # Install all Brewfiles at once
 [group('Apps')]
 install-all-brew:
-    #!/usr/bin/env bash
-    echo "Installing all applications from Brewfiles..."
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-cli.Brewfile
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-dev.Brewfile
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-fonts.Brewfile
-    brew bundle --file /usr/share/ublue-os/homebrew/dudley-k8s.Brewfile
-
-# Install JetBrains Toolbox for managing JetBrains IDEs
-[group('Apps')]
-install-jetbrains-toolbox:
-    #!/usr/bin/env bash
-    echo "Installing JetBrains Toolbox..."
-    pushd "$(mktemp -d)"
-    echo "Fetching latest version..."
-    curl -sSfL -o releases.json "https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release"
-    BUILD_VERSION=$(jq -r '.TBA[0].build' ./releases.json)
-    DOWNLOAD_LINK=$(jq -r '.TBA[0].downloads.linux.link' ./releases.json)
-    CHECKSUM_LINK=$(jq -r '.TBA[0].downloads.linux.checksumLink' ./releases.json)
-    echo "Installing JetBrains Toolbox ${BUILD_VERSION}"
-    curl -sSfL -O "${DOWNLOAD_LINK}"
-    curl -sSfL "${CHECKSUM_LINK}" | sha256sum -c
-    tar zxf jetbrains-toolbox-"${BUILD_VERSION}".tar.gz
-    mkdir -p $HOME/.local/share/JetBrains/ToolboxApp/
-    mv jetbrains-toolbox-"${BUILD_VERSION}"/* $HOME/.local/share/JetBrains/ToolboxApp/
-    popd
-    echo "Launching JetBrains Toolbox..."
-    $HOME/.local/share/JetBrains/ToolboxApp/bin/jetbrains-toolbox
+    @ujust dudley brew all
 
 # Shortcut for install-jetbrains-toolbox
 [group('Apps')]
@@ -77,10 +53,10 @@ install-flatpak APP_ID:
     flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     flatpak install -y flathub {{ APP_ID }}
 
-# Example: Install VSCode via Flatpak
+# Install VS Code and related IDE tooling from the shared Dudley IDE bundle
 [group('Apps')]
 install-vscode:
-    ujust install-flatpak com.visualstudio.code
+    @ujust dudley brew ide
 
 # Example: Install GIMP via Flatpak
 [group('Apps')]
