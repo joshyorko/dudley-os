@@ -8,6 +8,17 @@
 - Use the `github-mcp-server-get_file_contents` tool instead of curl/wget
 - This ensures consistent, authenticated access and better error handling
 
+## CRITICAL: Current Dudley Scope
+
+Active Dudley image work is split across two repositories:
+
+- `dsb-common` owns reusable Dudley payload: Brewfiles, Flatpak manifests, wallpapers, shared just recipes, Google Chrome repo definitions, VS Code extension payloads, and shared first-login hooks.
+- `dudley-os` owns final product-image assembly: the Bluefin DX base, layer copy order, final image identity, baked package installs such as Google Chrome, metadata, tests, and local product glue.
+
+Treat `dudleys-second-bedroom` as read-only legacy source material. Do not edit, push, reopen, or merge that repository when working on Dudley parity; move any still-needed behavior into `dsb-common` or `dudley-os`.
+
+Dakota/BuildStream work is out of scope for this repository unless the user explicitly asks for it. Do not introduce Dakota image names, tags, workflows, package manifests, or docs while syncing Dudley.
+
 ## CRITICAL: Pre-Commit Checklist
 
 **Execute before EVERY commit:**
@@ -176,10 +187,10 @@ This repository is no longer a generic finpilot template. It is a **thin Dudley 
 ### Validation Workflows
 The repository includes automated validation on pull requests:
 - **validate-shellcheck.yml** - Runs shellcheck on all `build/*.sh` scripts
-- **validate-brewfiles.yml** - Validates Homebrew Brewfile syntax
-- **validate-flatpaks.yml** - Checks Flatpak app IDs exist on Flathub
 - **validate-justfiles.yml** - Validates just file syntax
 - **validate-renovate.yml** - Validates Renovate configuration
+
+Reusable Dudley payload validation now belongs in `dsb-common`, because Brewfiles, Flatpak manifests, wallpaper assets, shared hooks, and shared just recipes are no longer stored in this product repo.
 
 **When adding files**: These validations run automatically on PRs. Fix any errors before merge.
 
@@ -221,19 +232,19 @@ dnf5 install -y vim git htop neovim tmux
 
 ### Homebrew Packages (Brew - Runtime)
 
-**Location**: `custom/brew/*.Brewfile`
+**Location**: `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/*.Brewfile`
 
-Homebrew packages are installed by users after deployment. Best for CLI tools and development environments.
+Homebrew packages are installed by users after deployment. In Dudley, the shipped Brewfiles are reusable payload and live in `dsb-common`, not this product repo.
 
 **Files**:
-- `custom/brew/default.Brewfile` - General purpose CLI tools
-- `custom/brew/development.Brewfile` - Development tools and environments
-- `custom/brew/fonts.Brewfile` - Font packages
-- Create custom `*.Brewfile` as needed
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-fonts.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-k8s.Brewfile`
 
 **Example**:
 ```ruby
-# In custom/brew/default.Brewfile
+# In dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 brew "bat"        # cat with syntax highlighting
 brew "eza"        # Modern replacement for ls
 brew "ripgrep"    # Faster grep
@@ -248,22 +259,23 @@ brew "fd"         # Simple alternative to find
 
 **Important**:
 - Brewfiles use Ruby syntax
-- Users install via `ujust` commands (e.g., `ujust install-default-apps`)
+- Users install via Dudley `ujust` commands, for example `ujust dudley brew cli`
 - Not installed in ISO/container - users install after deployment
+- Do not add Dudley Brewfiles under `custom/brew`; update `dsb-common` instead
 
 ### Flatpak Applications (GUI Apps - Runtime)
 
-**Location**: `custom/flatpaks/*.preinstall`
+**Location**: `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/*.preinstall`
 
-Flatpak applications are GUI apps installed after first boot. Use INI format.
+Flatpak applications are GUI apps installed after first boot. In Dudley, shipped Flatpak declarations are reusable payload and live in `dsb-common`, not this product repo.
 
 **Files**:
-- `custom/flatpaks/default.preinstall` - Default GUI applications
-- Create custom `*.preinstall` files as needed
+- `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall`
+- `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-dx.preinstall`
 
 **Example**:
 ```ini
-# In custom/flatpaks/default.preinstall
+# In dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall
 [Flatpak Preinstall org.mozilla.firefox]
 Branch=stable
 
@@ -286,6 +298,7 @@ Branch=stable
 - Find app IDs at https://flathub.org/
 - Use INI format with `[Flatpak Preinstall APP_ID]` sections
 - Always specify `Branch=stable` (or another branch)
+- Do not add Dudley Flatpak manifests under `custom/flatpaks`; update `dsb-common` instead
 
 ---
 
@@ -294,8 +307,8 @@ Branch=stable
 | Request | Action | Location |
 |---------|--------|----------|
 | Add package (build-time) | `dnf5 install -y pkg` | `build/10-build.sh` |
-| Add package (runtime) | `brew "pkg"` | `custom/brew/default.Brewfile` |
-| Add GUI app | `[Flatpak Preinstall org.app.id]` | `custom/flatpaks/default.preinstall` |
+| Add package (runtime) | `brew "pkg"` | `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/*.Brewfile` |
+| Add GUI app | `[Flatpak Preinstall org.app.id]` | `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/*.preinstall` |
 | Add user command | Create shortcut (NO dnf5) | `custom/ujust/*.just` |
 | Add third-party repo | Use example scripts | `build/20-*.sh.example` (rename) |
 | Replace desktop | Use example script | `build/30-cosmic-desktop.sh.example` |
@@ -429,11 +442,11 @@ systemctl set-default graphical.target
 
 **Example scripts**: See `build/20-onepassword.sh.example` and `build/30-cosmic-desktop.sh.example` for complete working examples.
 
-### 4. Homebrew (`custom/brew/`)
+### 4. Homebrew (`dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/`)
 
 **Files**: `*.Brewfile` (Ruby syntax)
 
-**Example - `custom/brew/default.Brewfile`**:
+**Example - `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile`**:
 ```ruby
 # CLI tools
 brew "bat"        # Better cat
@@ -447,7 +460,7 @@ brew "node"
 brew "python"
 ```
 
-**Users install via**: `ujust install-default-apps` (create shortcut in `custom/ujust/`)
+**Users install via**: `ujust dudley brew <target>` from the shared Dudley just recipes.
 
 ### 5. ujust Commands (`custom/ujust/`)
 
@@ -471,11 +484,11 @@ install-dev-tools:
 - Use `[group('Category')]` for organization
 - All `.just` files merged during build
 
-### 6. Flatpaks (`custom/flatpaks/`)
+### 6. Flatpaks (`dsb-common/system_files/dudley/etc/flatpak/preinstall.d/`)
 
 **Files**: `*.preinstall` (INI format, installed after first boot)
 
-**Example - `custom/flatpaks/default.preinstall`**:
+**Example - `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall`**:
 ```ini
 [Flatpak Preinstall org.mozilla.firefox]
 Branch=stable
@@ -487,7 +500,7 @@ Branch=stable
 Branch=stable
 ```
 
-**Important**: Not in ISO/container. Installed post-first-boot. Requires internet. Find IDs at https://flathub.org/
+**Important**: Not in ISO/container. Installed post-first-boot. Requires internet. Find IDs at https://flathub.org/. Update the payload in `dsb-common`, then rebuild `dudley-os` after `dsb-common:latest` publishes.
 
 ### 7. ISO/Disk Images (`iso/`)
 
@@ -903,10 +916,10 @@ See `build/copr-install-functions.sh` for reusable patterns:
 
 When user requests customization, check in this order:
 
-1. **`build/10-build.sh`** (50%) - Build-time packages, services, system configs
-2. **`custom/brew/`** (20%) - Runtime CLI tools, dev environments
-3. **`custom/ujust/`** (15%) - User convenience commands
-4. **`custom/flatpaks/`** (5%) - GUI applications
+1. **`dsb-common/system_files/dudley/`** - Reusable Dudley runtime payload, wallpapers, Brewfiles, Flatpaks, shared hooks, and shared just recipes
+2. **`build/10-build.sh`** - Final image assembly, build-time packages, services, system configs
+3. **`custom/ujust/`** - Product-local user convenience commands
+4. **`custom/system_files/`** - Product-local file overrides that should not be shared
 5. **`Containerfile`** (5%) - Base image, /opt config, advanced builds
 6. **`Justfile`** (2%) - Image name, build parameters
 7. **`iso/*.toml`** (2%) - ISO/disk customization for testing
@@ -949,10 +962,10 @@ podman run --rm -it ghcr.io/ublue-os/bluefin:stable bash
 **Brewfile issues**:
 ```bash
 # Validate Brewfile syntax
-brew bundle check --file custom/brew/default.Brewfile
+HOMEBREW_NO_AUTO_UPDATE=1 brew bundle list --file=../dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 
 # List what would be installed
-brew bundle list --file custom/brew/default.Brewfile
+brew bundle list --file ../dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 ```
 
 **Just file issues**:

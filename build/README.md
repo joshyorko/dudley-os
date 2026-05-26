@@ -9,9 +9,8 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 The main Dudley build applies filesystem layers in this order before any package installs:
 
 1. `dsb-common/shared`
-2. `projectbluefin/common`
-3. `dsb-common/dudley`
-4. Local `custom/system_files` product glue
+2. `dsb-common/dudley`
+3. Local `custom/system_files` product glue
 
 That keeps Dudley opinion/payload in `dsb-common` while leaving only final assembly glue in this repo. Local ujust wiring and final image package installs such as Google Chrome stay consolidated here, but Dudley Brewfiles, Flatpak declarations, wallpapers, the Google Chrome RPM repo definition, the VS Code Insiders cask opinion, the VS Code extension payload, and the shared first-login extension hook are expected to come from `dsb-common/dudley` at their final image paths. Chrome's repo is disabled after the build-time package install so runtime updates continue to flow through rebuilt images.
 
