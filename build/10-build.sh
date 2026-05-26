@@ -50,6 +50,12 @@ else
     echo "WARNING: dconf command not found, skipping dconf database update"
 fi
 
+if command -v glib-compile-schemas >/dev/null 2>&1; then
+    glib-compile-schemas /usr/share/glib-2.0/schemas
+else
+    echo "WARNING: glib-compile-schemas command not found, skipping GLib schema compilation"
+fi
+
 echo "::endgroup::"
 
 echo "::group:: Install Packages"

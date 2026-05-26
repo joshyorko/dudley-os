@@ -44,6 +44,17 @@ compute_content_hash() {
     cat "${sorted_files[@]}" | sha256sum | cut -c1-8
 }
 
+stamp_hook_version() {
+    local hook_path="$1"
+    local version_hash="$2"
+
+    if grep -qE '^hook_version="' "${hook_path}"; then
+        sed -i -E "s/^hook_version=\"[^\"]*\"/hook_version=\"${version_hash}\"/" "${hook_path}"
+    else
+        echo "WARNING: ${hook_path} does not declare hook_version"
+    fi
+}
+
 manifest_add_hook() {
     local manifest_json="$1"
     local hook_name="$2"
@@ -103,6 +114,7 @@ build_manifest() {
 
         local wallpaper_hash
         wallpaper_hash="$(compute_content_hash "${wallpaper_inputs[@]}")"
+        stamp_hook_version "${wallpaper_hook}" "${wallpaper_hash}"
         local wallpaper_deps
         wallpaper_deps="$(printf '%s\n' "${wallpaper_inputs[@]}" | jq -R . | jq -s .)"
         local wallpaper_meta
@@ -121,9 +133,18 @@ build_manifest() {
             vscode_inputs+=("${vscode_list}")
             extension_count="$(grep -v '^[[:space:]]*#' "${vscode_list}" | grep -c -v '^[[:space:]]*$' || true)"
         fi
+        local vscode_settings
+        for vscode_settings in \
+            "${VSCODE_CODE_SETTINGS:-/etc/skel/.config/Code/User/settings.json}" \
+            "${VSCODE_INSIDERS_SETTINGS:-/etc/skel/.config/Code - Insiders/User/settings.json}"; do
+            if [[ -f "${vscode_settings}" ]]; then
+                vscode_inputs+=("${vscode_settings}")
+            fi
+        done
 
         local vscode_hash
         vscode_hash="$(compute_content_hash "${vscode_inputs[@]}")"
+        stamp_hook_version "${vscode_hook}" "${vscode_hash}"
         local vscode_deps
         vscode_deps="$(printf '%s\n' "${vscode_inputs[@]}" | jq -R . | jq -s .)"
         local vscode_meta
