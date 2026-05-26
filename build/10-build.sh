@@ -54,8 +54,9 @@ echo "::endgroup::"
 
 echo "::group:: Install Packages"
 
-# Invoke the shared Dudley installer layered in from dsb-common.
-/usr/libexec/dudley/install-vscode-insiders.sh
+# Google Chrome is baked into the final product image. The repo definition is
+# supplied by dsb-common so all Dudley consumers use the same RPM source.
+/ctx/build/google-chrome.sh
 
 echo "::endgroup::"
 

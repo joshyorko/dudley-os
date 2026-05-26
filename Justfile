@@ -26,6 +26,7 @@ check:
 test-unit:
     #!/usr/bin/bash
     set -euo pipefail
+    bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
 
 # Run validation and unit tests

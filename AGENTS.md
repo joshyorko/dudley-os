@@ -1,4 +1,4 @@
-# Copilot Instructions for finpilot bootc Image Template
+# Copilot Instructions for dudley-os bootc Image
 
 ## CRITICAL: GitHub API Usage
 
@@ -7,6 +7,23 @@
 - When checking Containerfiles, build scripts, or configuration files
 - Use the `github-mcp-server-get_file_contents` tool instead of curl/wget
 - This ensures consistent, authenticated access and better error handling
+
+## CRITICAL: Current Dudley Scope
+
+Active Dudley image work is split across two repositories:
+
+- `dsb-common` owns reusable Dudley payload: Brewfiles, Flatpak manifests, wallpapers, shared just recipes, Google Chrome repo definitions, VS Code extension payloads, and shared first-login hooks.
+- `dudley-os` owns final product-image assembly: the Bluefin DX base, layer copy order, final image identity, baked package installs such as Google Chrome, metadata, tests, and local product glue.
+
+Treat `dudleys-second-bedroom` as read-only legacy source material. Do not edit, push, reopen, or merge that repository when working on Dudley parity; move any still-needed behavior into `dsb-common` or `dudley-os`.
+
+Dakota/BuildStream work is out of scope for this repository unless the user explicitly asks for it. Do not introduce Dakota image names, tags, workflows, package manifests, or docs while syncing Dudley.
+
+## CRITICAL: Dudley Bot Renovate
+
+This repo runs self-hosted Renovate from `.github/workflows/renovate.yml`.
+
+Use the repository secret `RENOVATE_TOKEN` for a Dudley-owned bot account or GitHub App installation. If the secret is absent, the workflow falls back to `github.token`, which is useful for smoke tests but will not make pull requests appear as a Dudley-branded bot.
 
 ## CRITICAL: Pre-Commit Checklist
 
@@ -31,9 +48,9 @@
 
 **When this repository is used as a template, you MUST:**
 
-### 1. Rename ALL instances of `finpilot`
+### 1. Rename ALL project identity references
 
-**Source of truth**: `Containerfile` line 9: `# Name: finpilot`
+**Source of truth**: `Containerfile` line 4: `# Name: dudley-os`
 
 **Files to update:**
 - `Containerfile` (line 9)
@@ -136,27 +153,24 @@ Signing is DISABLED by default. First builds succeed immediately. Enable later f
 ## Core Principles
 
 ### Multi-Stage Build Architecture
-This template follows the **Bluefin architecture pattern** from @projectbluefin/distroless:
+This repository is no longer a generic finpilot template. It is a **thin Dudley product image** built directly on Bluefin DX and layered with `dsb-common`:
 
 **Architecture Layers:**
 1. **Context Stage (ctx)** - Combines resources from multiple sources:
    - Local build scripts (`/build`)
    - Local custom files (`/custom`)
-   - **@projectbluefin/common** - Desktop configuration shared with Aurora (`/oci/common`)
-   - **@projectbluefin/branding** - Branding assets (`/oci/branding`)
-   - **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite (`/oci/artwork`)
-   - **@ublue-os/brew** - Homebrew integration (`/oci/brew`)
+   - **dsb-common/shared** - DSB organisation-wide shared files (`/oci/dsb-common/shared`)
+   - **dsb-common/dudley** - Dudley-specific shared payload (`/oci/dsb-common/dudley`)
 
 2. **Base Image Options:**
-   - `ghcr.io/ublue-os/silverblue-main:42` (Fedora-based, default)
-   - `quay.io/centos-bootc/centos-bootc:stream10` (CentOS-based)
+   - `ghcr.io/ublue-os/bluefin-dx:latest` pinned by digest in `Containerfile`
 
 **OCI Container Resources:**
-- Resources from OCI containers are copied to **distinct subdirectories** (`/oci/*`) to avoid file conflicts
+- `dsb-common` resources are copied to **distinct subdirectories** to avoid file conflicts
 - Renovate automatically updates `:latest` tags to **SHA digests** for reproducibility
 - All OCI resources are mounted at build-time via the `ctx` stage
 
-**Reference:** See [Bluefin Contributing Guide](https://docs.projectbluefin.io/contributing/) for architecture diagram
+**Rule for agents:** keep reusable Dudley payload in `dsb-common`; keep only final image assembly glue in `dudley-os`.
 
 ### Build-time vs Runtime
 - **Build-time** (`build/`): Baked into container. Use `dnf5 install`. Services, configs, system packages.
@@ -179,10 +193,10 @@ This template follows the **Bluefin architecture pattern** from @projectbluefin/
 ### Validation Workflows
 The repository includes automated validation on pull requests:
 - **validate-shellcheck.yml** - Runs shellcheck on all `build/*.sh` scripts
-- **validate-brewfiles.yml** - Validates Homebrew Brewfile syntax
-- **validate-flatpaks.yml** - Checks Flatpak app IDs exist on Flathub
 - **validate-justfiles.yml** - Validates just file syntax
 - **validate-renovate.yml** - Validates Renovate configuration
+
+Reusable Dudley payload validation now belongs in `dsb-common`, because Brewfiles, Flatpak manifests, wallpaper assets, shared hooks, and shared just recipes are no longer stored in this product repo.
 
 **When adding files**: These validations run automatically on PRs. Fix any errors before merge.
 
@@ -224,19 +238,19 @@ dnf5 install -y vim git htop neovim tmux
 
 ### Homebrew Packages (Brew - Runtime)
 
-**Location**: `custom/brew/*.Brewfile`
+**Location**: `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/*.Brewfile`
 
-Homebrew packages are installed by users after deployment. Best for CLI tools and development environments.
+Homebrew packages are installed by users after deployment. In Dudley, the shipped Brewfiles are reusable payload and live in `dsb-common`, not this product repo.
 
 **Files**:
-- `custom/brew/default.Brewfile` - General purpose CLI tools
-- `custom/brew/development.Brewfile` - Development tools and environments
-- `custom/brew/fonts.Brewfile` - Font packages
-- Create custom `*.Brewfile` as needed
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-fonts.Brewfile`
+- `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-k8s.Brewfile`
 
 **Example**:
 ```ruby
-# In custom/brew/default.Brewfile
+# In dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 brew "bat"        # cat with syntax highlighting
 brew "eza"        # Modern replacement for ls
 brew "ripgrep"    # Faster grep
@@ -251,22 +265,23 @@ brew "fd"         # Simple alternative to find
 
 **Important**:
 - Brewfiles use Ruby syntax
-- Users install via `ujust` commands (e.g., `ujust install-default-apps`)
+- Users install via Dudley `ujust` commands, for example `ujust dudley brew cli`
 - Not installed in ISO/container - users install after deployment
+- Do not add Dudley Brewfiles under `custom/brew`; update `dsb-common` instead
 
 ### Flatpak Applications (GUI Apps - Runtime)
 
-**Location**: `custom/flatpaks/*.preinstall`
+**Location**: `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/*.preinstall`
 
-Flatpak applications are GUI apps installed after first boot. Use INI format.
+Flatpak applications are GUI apps installed after first boot. In Dudley, shipped Flatpak declarations are reusable payload and live in `dsb-common`, not this product repo.
 
 **Files**:
-- `custom/flatpaks/default.preinstall` - Default GUI applications
-- Create custom `*.preinstall` files as needed
+- `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall`
+- `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-dx.preinstall`
 
 **Example**:
 ```ini
-# In custom/flatpaks/default.preinstall
+# In dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall
 [Flatpak Preinstall org.mozilla.firefox]
 Branch=stable
 
@@ -289,6 +304,7 @@ Branch=stable
 - Find app IDs at https://flathub.org/
 - Use INI format with `[Flatpak Preinstall APP_ID]` sections
 - Always specify `Branch=stable` (or another branch)
+- Do not add Dudley Flatpak manifests under `custom/flatpaks`; update `dsb-common` instead
 
 ---
 
@@ -297,8 +313,8 @@ Branch=stable
 | Request | Action | Location |
 |---------|--------|----------|
 | Add package (build-time) | `dnf5 install -y pkg` | `build/10-build.sh` |
-| Add package (runtime) | `brew "pkg"` | `custom/brew/default.Brewfile` |
-| Add GUI app | `[Flatpak Preinstall org.app.id]` | `custom/flatpaks/default.preinstall` |
+| Add package (runtime) | `brew "pkg"` | `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/*.Brewfile` |
+| Add GUI app | `[Flatpak Preinstall org.app.id]` | `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/*.preinstall` |
 | Add user command | Create shortcut (NO dnf5) | `custom/ujust/*.just` |
 | Add third-party repo | Use example scripts | `build/20-*.sh.example` (rename) |
 | Replace desktop | Use example script | `build/30-cosmic-desktop.sh.example` |
@@ -318,88 +334,67 @@ Branch=stable
 
 **File**: `Containerfile`
 
-This template uses a **multi-stage build** following the @projectbluefin/distroless pattern.
+This image uses a **multi-stage build** to assemble local Dudley product glue with the shared `dsb-common` OCI layer.
 
 **Stage 1: Context (ctx) - Line 39**
-Combines resources from multiple OCI containers:
+Combines local resources and shared Dudley payload:
 ```dockerfile
 FROM scratch AS ctx
 
 COPY build /build
 COPY custom /custom
-# Import from OCI containers - Renovate updates :latest to SHA-256 digests
-COPY --from=ghcr.io/ublue-os/base-main:latest /system_files /oci/base
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/projectbluefin/branding:latest /system_files /oci/branding
-COPY --from=ghcr.io/ublue-os/artwork:latest /system_files /oci/artwork
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 **Stage 2: Base Image - Line 52**
 ```dockerfile
-FROM ghcr.io/ublue-os/silverblue-main:latest  # Default (Fedora-based)
-# OR
-FROM quay.io/centos-bootc/centos-bootc:stream10  # CentOS-based
+FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
 ```
 
 **Common alternative base images**:
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin:stable      # Dev, GNOME, `:stable` or `:gts`
-FROM ghcr.io/ublue-os/bazzite:stable      # Gaming, Steam Deck
-FROM ghcr.io/ublue-os/aurora:stable       # KDE Plasma
-FROM quay.io/fedora/fedora-bootc:42       # Upstream Fedora
+# This product image is expected to inherit Bluefin DX directly.
+# Do not rebuild Bluefin from Silverblue plus partial common layers.
 ```
 
-**Tags**: `:stable` (recommended), `:latest` (bleeding edge), `-nvidia` variants available
+**Tags**: `:stable` for the product image; base and shared OCI inputs are pinned by digest.
 
 **Renovate**: Base image SHA and OCI container tags are auto-updated by Renovate bot every 6 hours (see `.github/renovate.json5`)
 
 **OCI Container Resources:**
-- **@ublue-os/base-main** - Base system configuration
-- **@projectbluefin/common** - Desktop configuration shared with Aurora
-- **@projectbluefin/branding** - Branding assets
-- **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite
-- **@ublue-os/brew** - Homebrew integration
+- **ghcr.io/joshyorko/dsb-common:latest** - DSB shared payload and Dudley-specific shared content
 
 **File Locations in Build Scripts:**
 - Local build scripts: `/ctx/build/`
 - Local custom files: `/ctx/custom/`
-- Base files: `/ctx/oci/base/`
-- Common files: `/ctx/oci/common/`
-- Branding files: `/ctx/oci/branding/`
-- Artwork files: `/ctx/oci/artwork/`
-- Brew files: `/ctx/oci/brew/`
+- DSB shared files: `/ctx/oci/dsb-common/shared/`
+- Dudley shared payload: `/ctx/oci/dsb-common/dudley/`
 
 ### 2. OCI Containers for Additional System Files
 
 **File**: `Containerfile` (ctx stage, lines 6-18)
 
-Following the `@projectbluefin/distroless` pattern, you can layer in additional system files from OCI containers. These are commented out by default in the template.
+Keep this repo focused on final product assembly. Add reusable Dudley files to `dsb-common`, then consume them from the fixed `shared` and `dudley` paths.
 
 **Available OCI Containers**:
 ```dockerfile
-# Artwork and Branding from projectbluefin/common
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files/bluefin /files/bluefin
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files/shared /files/shared
-
-# Homebrew system files from ublue-os/brew
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /files/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 **What's included**:
-- `projectbluefin/common:latest` - Bluefin wallpapers, themes, branding assets, ujust completions, udev rules
-- `ublue-os/brew:latest` - Homebrew system integration files
+- `dsb-common/shared` - DSB organisation baseline files
+- `dsb-common/dudley` - Dudley wallpapers, Brewfiles, Flatpak manifests, Chrome repo definition, VS Code extension payload, and user setup hooks
 
 **When to use**:
-- You want Bluefin-specific artwork and wallpapers in your custom image
-- You want additional system integration beyond what the base image provides
-- You're building a Bluefin derivative and want to maintain brand consistency
+- You need shared Dudley payload in the final image
+- You are moving reusable content out of the legacy `dudleys-second-bedroom` source material
 
 **Important**: 
-- These are **commented out by default** as template examples
-- Uncomment only if you specifically want these additional system files
-- The files are copied into the `ctx` stage and made available to your build scripts
-- To use the files in your build, you'll need to copy them from `/ctx/files/*` to appropriate system locations in your build scripts
+- Do not add new reusable payload directly to `dudley-os`
+- Do not reintroduce `projectbluefin/common` as a separate layer; Bluefin DX is already the inherited base
+- Copy order is `dsb-common/shared`, then `dsb-common/dudley`, then local `dudley-os` product glue
 
 ### 3. Build Scripts (`build/`)
 
@@ -453,11 +448,11 @@ systemctl set-default graphical.target
 
 **Example scripts**: See `build/20-onepassword.sh.example` and `build/30-cosmic-desktop.sh.example` for complete working examples.
 
-### 4. Homebrew (`custom/brew/`)
+### 4. Homebrew (`dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/`)
 
 **Files**: `*.Brewfile` (Ruby syntax)
 
-**Example - `custom/brew/default.Brewfile`**:
+**Example - `dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile`**:
 ```ruby
 # CLI tools
 brew "bat"        # Better cat
@@ -471,7 +466,7 @@ brew "node"
 brew "python"
 ```
 
-**Users install via**: `ujust install-default-apps` (create shortcut in `custom/ujust/`)
+**Users install via**: `ujust dudley brew <target>` from the shared Dudley just recipes.
 
 ### 5. ujust Commands (`custom/ujust/`)
 
@@ -495,11 +490,11 @@ install-dev-tools:
 - Use `[group('Category')]` for organization
 - All `.just` files merged during build
 
-### 6. Flatpaks (`custom/flatpaks/`)
+### 6. Flatpaks (`dsb-common/system_files/dudley/etc/flatpak/preinstall.d/`)
 
 **Files**: `*.preinstall` (INI format, installed after first boot)
 
-**Example - `custom/flatpaks/default.preinstall`**:
+**Example - `dsb-common/system_files/dudley/etc/flatpak/preinstall.d/dudley-default.preinstall`**:
 ```ini
 [Flatpak Preinstall org.mozilla.firefox]
 Branch=stable
@@ -511,7 +506,7 @@ Branch=stable
 Branch=stable
 ```
 
-**Important**: Not in ISO/container. Installed post-first-boot. Requires internet. Find IDs at https://flathub.org/
+**Important**: Not in ISO/container. Installed post-first-boot. Requires internet. Find IDs at https://flathub.org/. Update the payload in `dsb-common`, then rebuild `dudley-os` after `dsb-common:latest` publishes.
 
 ### 7. ISO/Disk Images (`iso/`)
 
@@ -558,7 +553,7 @@ bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 
 ### 8. Understanding the Multi-Stage Build Architecture
 
-This template implements a **multi-stage build pattern** following @projectbluefin/distroless.
+This repository implements a **multi-stage build pattern** for the Dudley product image.
 
 **Why Multi-Stage?**
 - **Modularity**: Combine resources from multiple OCI containers
@@ -573,20 +568,18 @@ This template implements a **multi-stage build pattern** following @projectbluef
 FROM scratch AS ctx
 COPY build /build                    # Local build scripts
 COPY custom /custom                  # Local customizations
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/projectbluefin/branding:latest /system_files /oci/branding
-COPY --from=ghcr.io/ublue-os/artwork:latest /system_files /oci/artwork
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 This stage combines:
 - **Local resources** (build scripts, custom files)
-- **OCI container resources** from upstream projects
+- **OCI container resources** from `dsb-common`
 - Resources are copied to **distinct subdirectories** to avoid conflicts
 
 **Stage 2: Final Image**
 ```dockerfile
-FROM ghcr.io/ublue-os/silverblue-main:42
+FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/build/10-build.sh
@@ -599,17 +592,14 @@ The final stage:
 
 **Accessing OCI Resources in Build Scripts:**
 
-Build scripts can access files from OCI containers:
+Build scripts can access files from the `dsb-common` OCI layer:
 ```bash
 #!/usr/bin/env bash
-# Example: Copy branding files
-cp -r /ctx/oci/branding/* /usr/share/branding/
+# Example: Copy organisation-wide shared files
+cp -a /ctx/oci/dsb-common/shared/. /
 
-# Example: Copy common desktop config
-cp /ctx/oci/common/config.yaml /etc/myapp/
-
-# Example: Use brew files
-cp /ctx/oci/brew/*.sh /usr/local/bin/
+# Example: Copy Dudley-specific shared payload
+cp -a /ctx/oci/dsb-common/dudley/. /
 ```
 
 **Renovate Integration:**
@@ -932,10 +922,10 @@ See `build/copr-install-functions.sh` for reusable patterns:
 
 When user requests customization, check in this order:
 
-1. **`build/10-build.sh`** (50%) - Build-time packages, services, system configs
-2. **`custom/brew/`** (20%) - Runtime CLI tools, dev environments
-3. **`custom/ujust/`** (15%) - User convenience commands
-4. **`custom/flatpaks/`** (5%) - GUI applications
+1. **`dsb-common/system_files/dudley/`** - Reusable Dudley runtime payload, wallpapers, Brewfiles, Flatpaks, shared hooks, and shared just recipes
+2. **`build/10-build.sh`** - Final image assembly, build-time packages, services, system configs
+3. **`custom/ujust/`** - Product-local user convenience commands
+4. **`custom/system_files/`** - Product-local file overrides that should not be shared
 5. **`Containerfile`** (5%) - Base image, /opt config, advanced builds
 6. **`Justfile`** (2%) - Image name, build parameters
 7. **`iso/*.toml`** (2%) - ISO/disk customization for testing
@@ -978,10 +968,10 @@ podman run --rm -it ghcr.io/ublue-os/bluefin:stable bash
 **Brewfile issues**:
 ```bash
 # Validate Brewfile syntax
-brew bundle check --file custom/brew/default.Brewfile
+HOMEBREW_NO_AUTO_UPDATE=1 brew bundle list --file=../dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 
 # List what would be installed
-brew bundle list --file custom/brew/default.Brewfile
+brew bundle list --file ../dsb-common/system_files/dudley/usr/share/ublue-os/homebrew/dudley-cli.Brewfile
 ```
 
 **Just file issues**:
@@ -1103,6 +1093,6 @@ Assisted-by: Claude 3.5 Sonnet via GitHub Copilot
 
 ---
 
-**Last Updated**: 2025-11-14  
-**Template Version**: finpilot (Enhanced with comprehensive Copilot instructions)  
-**Maintainer**: Universal Blue Community
+**Last Updated**: 2026-05-26
+**Template lineage**: originally bootstrapped from projectbluefin/finpilot; current product route is Bluefin DX plus dsb-common
+**Maintainer**: Dudley OS maintainers
