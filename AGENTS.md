@@ -136,27 +136,24 @@ Signing is DISABLED by default. First builds succeed immediately. Enable later f
 ## Core Principles
 
 ### Multi-Stage Build Architecture
-This template follows the **Bluefin architecture pattern** from @projectbluefin/distroless:
+This repository is no longer a generic finpilot template. It is a **thin Dudley product image** built directly on Bluefin DX and layered with `dsb-common`:
 
 **Architecture Layers:**
 1. **Context Stage (ctx)** - Combines resources from multiple sources:
    - Local build scripts (`/build`)
    - Local custom files (`/custom`)
-   - **@projectbluefin/common** - Desktop configuration shared with Aurora (`/oci/common`)
-   - **@projectbluefin/branding** - Branding assets (`/oci/branding`)
-   - **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite (`/oci/artwork`)
-   - **@ublue-os/brew** - Homebrew integration (`/oci/brew`)
+   - **dsb-common/shared** - DSB organisation-wide shared files (`/oci/dsb-common/shared`)
+   - **dsb-common/dudley** - Dudley-specific shared payload (`/oci/dsb-common/dudley`)
 
 2. **Base Image Options:**
-   - `ghcr.io/ublue-os/silverblue-main:42` (Fedora-based, default)
-   - `quay.io/centos-bootc/centos-bootc:stream10` (CentOS-based)
+   - `ghcr.io/ublue-os/bluefin-dx:latest` pinned by digest in `Containerfile`
 
 **OCI Container Resources:**
-- Resources from OCI containers are copied to **distinct subdirectories** (`/oci/*`) to avoid file conflicts
+- `dsb-common` resources are copied to **distinct subdirectories** to avoid file conflicts
 - Renovate automatically updates `:latest` tags to **SHA digests** for reproducibility
 - All OCI resources are mounted at build-time via the `ctx` stage
 
-**Reference:** See [Bluefin Contributing Guide](https://docs.projectbluefin.io/contributing/) for architecture diagram
+**Rule for agents:** keep reusable Dudley payload in `dsb-common`; keep only final image assembly glue in `dudley-os`.
 
 ### Build-time vs Runtime
 - **Build-time** (`build/`): Baked into container. Use `dnf5 install`. Services, configs, system packages.
@@ -318,88 +315,67 @@ Branch=stable
 
 **File**: `Containerfile`
 
-This template uses a **multi-stage build** following the @projectbluefin/distroless pattern.
+This image uses a **multi-stage build** to assemble local Dudley product glue with the shared `dsb-common` OCI layer.
 
 **Stage 1: Context (ctx) - Line 39**
-Combines resources from multiple OCI containers:
+Combines local resources and shared Dudley payload:
 ```dockerfile
 FROM scratch AS ctx
 
 COPY build /build
 COPY custom /custom
-# Import from OCI containers - Renovate updates :latest to SHA-256 digests
-COPY --from=ghcr.io/ublue-os/base-main:latest /system_files /oci/base
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/projectbluefin/branding:latest /system_files /oci/branding
-COPY --from=ghcr.io/ublue-os/artwork:latest /system_files /oci/artwork
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 **Stage 2: Base Image - Line 52**
 ```dockerfile
-FROM ghcr.io/ublue-os/silverblue-main:latest  # Default (Fedora-based)
-# OR
-FROM quay.io/centos-bootc/centos-bootc:stream10  # CentOS-based
+FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
 ```
 
 **Common alternative base images**:
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin:stable      # Dev, GNOME, `:stable` or `:gts`
-FROM ghcr.io/ublue-os/bazzite:stable      # Gaming, Steam Deck
-FROM ghcr.io/ublue-os/aurora:stable       # KDE Plasma
-FROM quay.io/fedora/fedora-bootc:42       # Upstream Fedora
+# This product image is expected to inherit Bluefin DX directly.
+# Do not rebuild Bluefin from Silverblue plus partial common layers.
 ```
 
-**Tags**: `:stable` (recommended), `:latest` (bleeding edge), `-nvidia` variants available
+**Tags**: `:stable` for the product image; base and shared OCI inputs are pinned by digest.
 
 **Renovate**: Base image SHA and OCI container tags are auto-updated by Renovate bot every 6 hours (see `.github/renovate.json5`)
 
 **OCI Container Resources:**
-- **@ublue-os/base-main** - Base system configuration
-- **@projectbluefin/common** - Desktop configuration shared with Aurora
-- **@projectbluefin/branding** - Branding assets
-- **@ublue-os/artwork** - Artwork shared with Aurora and Bazzite
-- **@ublue-os/brew** - Homebrew integration
+- **ghcr.io/joshyorko/dsb-common:latest** - DSB shared payload and Dudley-specific shared content
 
 **File Locations in Build Scripts:**
 - Local build scripts: `/ctx/build/`
 - Local custom files: `/ctx/custom/`
-- Base files: `/ctx/oci/base/`
-- Common files: `/ctx/oci/common/`
-- Branding files: `/ctx/oci/branding/`
-- Artwork files: `/ctx/oci/artwork/`
-- Brew files: `/ctx/oci/brew/`
+- DSB shared files: `/ctx/oci/dsb-common/shared/`
+- Dudley shared payload: `/ctx/oci/dsb-common/dudley/`
 
 ### 2. OCI Containers for Additional System Files
 
 **File**: `Containerfile` (ctx stage, lines 6-18)
 
-Following the `@projectbluefin/distroless` pattern, you can layer in additional system files from OCI containers. These are commented out by default in the template.
+Keep this repo focused on final product assembly. Add reusable Dudley files to `dsb-common`, then consume them from the fixed `shared` and `dudley` paths.
 
 **Available OCI Containers**:
 ```dockerfile
-# Artwork and Branding from projectbluefin/common
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files/bluefin /files/bluefin
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files/shared /files/shared
-
-# Homebrew system files from ublue-os/brew
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /files/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 **What's included**:
-- `projectbluefin/common:latest` - Bluefin wallpapers, themes, branding assets, ujust completions, udev rules
-- `ublue-os/brew:latest` - Homebrew system integration files
+- `dsb-common/shared` - DSB organisation baseline files
+- `dsb-common/dudley` - Dudley wallpapers, Brewfiles, Flatpak manifests, Chrome repo definition, VS Code extension payload, and user setup hooks
 
 **When to use**:
-- You want Bluefin-specific artwork and wallpapers in your custom image
-- You want additional system integration beyond what the base image provides
-- You're building a Bluefin derivative and want to maintain brand consistency
+- You need shared Dudley payload in the final image
+- You are moving reusable content out of the legacy `dudleys-second-bedroom` source material
 
 **Important**: 
-- These are **commented out by default** as template examples
-- Uncomment only if you specifically want these additional system files
-- The files are copied into the `ctx` stage and made available to your build scripts
-- To use the files in your build, you'll need to copy them from `/ctx/files/*` to appropriate system locations in your build scripts
+- Do not add new reusable payload directly to `dudley-os`
+- Do not reintroduce `projectbluefin/common` as a separate layer; Bluefin DX is already the inherited base
+- Copy order is `dsb-common/shared`, then `dsb-common/dudley`, then local `dudley-os` product glue
 
 ### 3. Build Scripts (`build/`)
 
@@ -558,7 +534,7 @@ bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 
 ### 8. Understanding the Multi-Stage Build Architecture
 
-This template implements a **multi-stage build pattern** following @projectbluefin/distroless.
+This repository implements a **multi-stage build pattern** for the Dudley product image.
 
 **Why Multi-Stage?**
 - **Modularity**: Combine resources from multiple OCI containers
@@ -573,20 +549,18 @@ This template implements a **multi-stage build pattern** following @projectbluef
 FROM scratch AS ctx
 COPY build /build                    # Local build scripts
 COPY custom /custom                  # Local customizations
-COPY --from=ghcr.io/projectbluefin/common:latest /system_files /oci/common
-COPY --from=ghcr.io/projectbluefin/branding:latest /system_files /oci/branding
-COPY --from=ghcr.io/ublue-os/artwork:latest /system_files /oci/artwork
-COPY --from=ghcr.io/ublue-os/brew:latest /system_files /oci/brew
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-common/dudley
 ```
 
 This stage combines:
 - **Local resources** (build scripts, custom files)
-- **OCI container resources** from upstream projects
+- **OCI container resources** from `dsb-common`
 - Resources are copied to **distinct subdirectories** to avoid conflicts
 
 **Stage 2: Final Image**
 ```dockerfile
-FROM ghcr.io/ublue-os/silverblue-main:42
+FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/build/10-build.sh
@@ -599,17 +573,14 @@ The final stage:
 
 **Accessing OCI Resources in Build Scripts:**
 
-Build scripts can access files from OCI containers:
+Build scripts can access files from the `dsb-common` OCI layer:
 ```bash
 #!/usr/bin/env bash
-# Example: Copy branding files
-cp -r /ctx/oci/branding/* /usr/share/branding/
+# Example: Copy organisation-wide shared files
+cp -a /ctx/oci/dsb-common/shared/. /
 
-# Example: Copy common desktop config
-cp /ctx/oci/common/config.yaml /etc/myapp/
-
-# Example: Use brew files
-cp /ctx/oci/brew/*.sh /usr/local/bin/
+# Example: Copy Dudley-specific shared payload
+cp -a /ctx/oci/dsb-common/dudley/. /
 ```
 
 **Renovate Integration:**
@@ -1103,6 +1074,6 @@ Assisted-by: Claude 3.5 Sonnet via GitHub Copilot
 
 ---
 
-**Last Updated**: 2025-11-14  
-**Template lineage**: based on projectbluefin/finpilot (enhanced with comprehensive Copilot instructions)
-**Maintainer**: Universal Blue Community
+**Last Updated**: 2026-05-26
+**Template lineage**: originally bootstrapped from projectbluefin/finpilot; current product route is Bluefin DX plus dsb-common
+**Maintainer**: Dudley OS maintainers
