@@ -1,8 +1,7 @@
-name: Renovate
+name: Dudley Bot Renovate
 on:
   schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+    - cron: "7 */6 * * *"
   workflow_dispatch:
   push:
     branches:
@@ -11,22 +10,28 @@ on:
       - '.github/renovate.json5'
       - '.github/workflows/renovate.yml'
 
+concurrency:
+  group: dudley-bot-renovate-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   renovate:
-    name: Run Renovate
+    name: Dudley Bot dependency sweep
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Self-hosted Renovate
+      - name: Run Dudley Bot Renovate
         uses: renovatebot/github-action@b9486682a19fe4ea2dd1263c11b4e0c1fe1838fe # v40.3.2
         with:
           configurationFile: .github/renovate.json5
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RENOVATE_TOKEN || github.token }}
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
-          LOG_LEVEL: 'debug'
+          RENOVATE_DEPENDENCY_DASHBOARD_TITLE: "Dudley Bot Dependency Dashboard"
+          LOG_LEVEL: "debug"

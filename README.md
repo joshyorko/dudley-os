@@ -58,16 +58,21 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
 
 ### Build System
 - Automated builds via GitHub Actions on every commit
-- Awesome self hosted Renovate setup that keeps all your images and actions up to date.
+- Dudley Bot self-hosted Renovate runs from GitHub Actions to keep images and actions current
 - Automatic cleanup of old images (90+ days) to keep it tidy
 - Pull request workflow - test changes before merging to main
   - PRs build and validate before merge
   - `main` branch builds `:stable` images
 - Validates your files on pull requests so you never break a build:
-  - Brewfile, Justfile, ShellCheck, Renovate config, and it'll even check to make sure the flatpak you add exists on FlatHub
+  - Justfile, ShellCheck, Renovate config, and final image build checks run here
+  - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
 - Production Grade Features
   - Container signing and SBOM Generation
   - See checklist below to enable these as they take some manual configuration
+
+### Dudley Bot Renovate
+
+Dependency updates are handled by the self-hosted GitHub Actions workflow in `.github/workflows/renovate.yml`. Set the repository secret `RENOVATE_TOKEN` to a Dudley-owned bot account or GitHub App installation token when you want Renovate pull requests to come from that identity. Without the secret, the workflow can fall back to `github.token` for repository-local runs.
 
 ### Homebrew Integration
 - Dudley’s shipped Brewfiles are expected from the `dsb-common` Dudley layer at `/usr/share/ublue-os/homebrew/`

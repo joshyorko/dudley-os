@@ -19,6 +19,12 @@ Treat `dudleys-second-bedroom` as read-only legacy source material. Do not edit,
 
 Dakota/BuildStream work is out of scope for this repository unless the user explicitly asks for it. Do not introduce Dakota image names, tags, workflows, package manifests, or docs while syncing Dudley.
 
+## CRITICAL: Dudley Bot Renovate
+
+This repo runs self-hosted Renovate from `.github/workflows/renovate.yml`.
+
+Use the repository secret `RENOVATE_TOKEN` for a Dudley-owned bot account or GitHub App installation. If the secret is absent, the workflow falls back to `github.token`, which is useful for smoke tests but will not make pull requests appear as a Dudley-branded bot.
+
 ## CRITICAL: Pre-Commit Checklist
 
 **Execute before EVERY commit:**
