@@ -1,14 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices"
+    "github>joshyorko/renovate-config:org-inherited-config"
   ],
-
-  "dependencyDashboard": true,
-  "dependencyDashboardTitle": "Dudley Bot Dependency Dashboard",
-
-  "rebaseWhen": "auto",
-  "prCreation": "immediate",
 
   "customManagers": [
     {
@@ -30,23 +24,7 @@
     }
   ],
 
-  "platformAutomerge": true,
-
   "packageRules": [
-    {
-      "automerge": true,
-      "matchUpdateTypes": ["pin", "pinDigest"]
-    },
-    {
-      "automerge": true,
-      "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["digest"]
-    },
-    {
-      "automerge": true,
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["digest"]
-    },
     {
       "groupName": "Universal Blue dependencies",
       "matchPackageNames": ["/^ghcr\\.io\\/ublue-os\\//"]
@@ -54,11 +32,6 @@
     {
       "groupName": "bootc builder image",
       "matchPackageNames": ["quay.io/centos-bootc/bootc-image-builder"]
-    },
-    {
-      "groupName": "GitHub Actions",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
