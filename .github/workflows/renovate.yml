@@ -26,12 +26,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Check Renovate token
+        shell: bash
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [[ -z "${RENOVATE_TOKEN}" ]]; then
+            echo "::error::RENOVATE_TOKEN is required. Use a bot PAT or GitHub App token with Contents, Pull requests, Issues, Vulnerability alerts, and Workflows permissions."
+            exit 1
+          fi
 
       - name: Run Dudley Bot Renovate
-        uses: renovatebot/github-action@b9486682a19fe4ea2dd1263c11b4e0c1fe1838fe # v40.3.2
+        uses: renovatebot/github-action@693b9ef15eec82123529a37c782242f091365961 # v46.1.14
         with:
           configurationFile: .github/renovate.json5
-          token: ${{ secrets.RENOVATE_TOKEN || github.token }}
+          token: ${{ secrets.RENOVATE_TOKEN }}
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_DEPENDENCY_DASHBOARD_TITLE: "Dudley Bot Dependency Dashboard"
