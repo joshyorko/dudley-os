@@ -1,6 +1,6 @@
 export image_name := env("IMAGE_NAME", "dudley-os")
 export default_tag := env("DEFAULT_TAG", "stable")
-export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest@sha256:903c01d110b8533f8891f07c69c0ba2377f8d4bc7e963311082b7028c04d529d")
+export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest@sha256:754fc17718f977313885379e2c779066aba7d15af88fe04b486baec74759f574")
 export dagger_registry := env("DAGGER_REGISTRY", "ghcr.io/joshyorko")
 export dagger_local_registry := env("LOCAL_REGISTRY", "localhost:5000")
 export dagger_registry_username := env("REGISTRY_USERNAME", "")
