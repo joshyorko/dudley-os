@@ -32,7 +32,7 @@
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
-ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:67a63b951a01a4ca247a1b803513e0bcf30191a97d7ba0de9ec95358bcbfa709"
+ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:1d6f3aee7c30a42d9a7c7be98a07b19db1c7b9867d2146f6d8b974f16d337654"
 
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx
