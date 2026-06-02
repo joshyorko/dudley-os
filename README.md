@@ -128,7 +128,7 @@ Note: Image signing is disabled by default. Your images will build successfully 
 
 Choose your base image in `Containerfile`:
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
+FROM ghcr.io/ublue-os/bluefin-dx:stable@sha256:...
 ```
 
 Add your packages in `build/10-build.sh`:
@@ -324,7 +324,7 @@ This template now follows a **thin-product Bluefin layering model**. Dudley star
 - **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
 
 **Stage 2: Base Image** - Default:
-- `ghcr.io/ublue-os/bluefin-dx:latest` (Bluefin GNOME + DX userland)
+- `ghcr.io/ublue-os/bluefin-dx:stable` (Bluefin GNOME + DX userland)
 
 ### Benefits of This Architecture
 

@@ -27,12 +27,12 @@
 #    - Dudley product OCI layer
 #
 # 2. Base Image:
-#    - `ghcr.io/ublue-os/bluefin-dx:latest` (Bluefin GNOME + DX userland)
+#    - `ghcr.io/ublue-os/bluefin-dx:stable` (Bluefin GNOME + DX userland)
 #
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
-ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:latest@sha256:834f0a3d6b2fb8f1cfbd228dcf5d86f287882fb7ceab334c6698cf35a349849e"
+ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:stable@sha256:4441b7993d4107145ce835bf78be95dc92342b0cda1e2e664f8f2718b45fce80"
 
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx

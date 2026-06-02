@@ -3,7 +3,7 @@
 set -euo pipefail
 
 final_image_ref="${FINAL_IMAGE_REF:-ghcr.io/joshyorko/dudley-os:stable}"
-base_image_ref="${BASE_IMAGE_REF:-ghcr.io/ublue-os/bluefin-dx:latest}"
+base_image_ref="${BASE_IMAGE_REF:-ghcr.io/ublue-os/bluefin-dx:stable}"
 git_commit="${SHA_HEAD_SHORT:-unknown}"
 
 manifest_path="${MANIFEST_PATH:-/etc/dudley/build-manifest.json}"
