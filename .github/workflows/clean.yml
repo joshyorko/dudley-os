@@ -1,7 +1,8 @@
 name: Cleanup Old Images
+
 on:
-  
   workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
 
@@ -12,14 +13,10 @@ jobs:
       packages: write
     steps:
       - name: Delete Images Older Than 90 Days
-        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f # v1.2.1
+        uses: projectbluefin/actions/bootc-build/ghcr-cleanup@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # IMPORTANT: Update this to match your image name from Containerfile (line 9)
-          # This should match the "# Name: your-repo-name" comment in your Containerfile
-          # Example: If your Containerfile has "# Name: my-custom-os", use "my-custom-os" here
           packages: dudley-os
           older-than: 90 days
-          delete-orphaned-images: true
-          keep-n-tagged: 7
-          keep-n-untagged: 7
+          keep-n-tagged: "7"
+          keep-n-untagged: "7"
+          github-token: ${{ secrets.GITHUB_TOKEN }}

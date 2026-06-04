@@ -21,9 +21,9 @@ Dakota/BuildStream work is out of scope for this repository unless the user expl
 
 ## CRITICAL: Dudley Bot Renovate
 
-This repo runs self-hosted Renovate from `.github/workflows/renovate.yml`.
+This repo is managed by the central `joshyorko/renovate-config` runner. Keep repo-specific rules in `.github/renovate.json5`; do not add a repo-local Renovate workflow unless Josh explicitly asks for that runner model again.
 
-Use the repository secret `RENOVATE_TOKEN` for a Dudley-owned bot account or GitHub App installation. Do not fall back to `github.token`; it can leave Renovate branches without PR checks and cannot update workflow files. Bot tokens must be able to read Dependabot/vulnerability alerts and write workflow files, or Renovate will warn about vulnerability alerts and GitHub will reject updates under `.github/workflows/`.
+The central bot must be able to read Dependabot/vulnerability alerts and write workflow files, or Renovate will warn about vulnerability alerts and GitHub will reject updates under `.github/workflows/`.
 
 ## CRITICAL: Pre-Commit Checklist
 
@@ -97,9 +97,9 @@ Here are the changes from [Base Image Name]. This image is based on [Bluefin/Baz
 
 Confirm `.github/copilot-instructions.md` exists in the new repository. This file should be automatically copied when using this as a GitHub template.
 
-### 4. Explain signing is optional
+### 4. Explain signing is keyless
 
-Signing is DISABLED by default. First builds succeed immediately. Enable later for production (see README).
+The CI publish workflow signs with GitHub Actions OIDC keyless cosign signing. Do not add or require `SIGNING_SECRET` for the main GitHub Actions publish path.
 
 **These 4 steps are REQUIRED for every new template instance.**
 
@@ -137,7 +137,8 @@ Signing is DISABLED by default. First builds succeed immediately. Enable later f
 │   ├── workflows/       # GitHub Actions workflows
 │   │   ├── build.yml               # Builds :stable on main
 │   │   ├── clean.yml               # Deletes images >90 days old
-│   │   ├── renovate.yml            # Renovate bot updates (6h interval)
+│   │   ├── skill-drift.yml         # Warns when workflow/code changes lack doc updates
+│   │   ├── upgrade-test.yml        # Manual bootc upgrade/rollback gate
 │   │   ├── validate-*.yml          # Pre-merge validation checks
 │   │   └── ...
 │   ├── copilot-instructions.md  # THIS FILE - Instructions for Copilot
@@ -535,8 +536,9 @@ bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 
 **Workflows**:
 - `build.yml` - Builds `:stable` on main
-- `renovate.yml` - Monitors base image updates (every 6 hours)
-- `clean.yml` - Deletes images >90 days (weekly)
+- `clean.yml` - Deletes images >90 days on manual dispatch
+- `skill-drift.yml` - Warns when workflow/code changes lack matching instruction or docs updates
+- `upgrade-test.yml` - Manual bootc upgrade and rollback gate for a supplied image ref
 - `validate-*.yml` - Pre-merge validation (shellcheck, Brewfile, Flatpak, etc.)
 
 **Image Tags**:
@@ -610,25 +612,18 @@ cp -a /ctx/oci/dsb-common/dudley/. /
 
 **Reference:** See [Bluefin Contributing Guide](https://docs.projectbluefin.io/contributing/) for architecture diagram
 
-### 9. Image Signing (Optional, Recommended for Production)
+### 9. Image Signing and Provenance
 
-**Default**: DISABLED (commented out in workflows) to allow first builds.
+Main-branch CI publishes use `projectbluefin/actions/bootc-build/sign-and-publish` for keyless cosign signing, SBOM attachment, and GitHub provenance attestations.
+
 ```bash
-# Generate keys
-COSIGN_PASSWORD="" cosign generate-key-pair
-# Creates: cosign.key (SECRET), cosign.pub (COMMIT)
-
-# Add to GitHub
-# Settings → Secrets and Variables → Actions → New secret
-# Name: SIGNING_SECRET
-# Value: <paste entire contents of cosign.key>
-
-# Uncomment signing sections in:
-# - .github/workflows/build.yml
-# - .github/workflows/build-testing.yml
+cosign verify \
+  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/joshyorko/dudley-os:stable
 ```
 
-**NEVER commit `cosign.key`**. Already in `.gitignore`.
+The repo-local Dagger release path can still use key-based signing for ad hoc registries when `--signing-key` is provided.
 
 ---
 
@@ -660,7 +655,7 @@ COSIGN_PASSWORD="" cosign generate-key-pair
 
 | Symptom | Cause | Solution |
 |---------|-------|----------|
-| Build fails: "permission denied" | Signing misconfigured | Verify signing commented out OR `SIGNING_SECRET` set |
+| Build fails: keyless signing permission error | Missing OIDC permission | Ensure `id-token: write` is set on the publishing job |
 | Build fails: "package not found" | Typo or unavailable | Check spelling, verify on RPMfusion, add COPR if needed |
 | Build fails: "base image not found" | Invalid FROM line | Check syntax in `Containerfile` line 24 |
 | Build fails: "shellcheck error" | Script syntax error | Run `shellcheck build/*.sh` locally, fix errors |
@@ -939,7 +934,6 @@ When user requests customization, check in this order:
 - `.gitignore` - Prevents committing secrets
 - `build/copr-helpers.sh` - Helper functions (stable patterns)
 - `LICENSE` - Repository license
-- `cosign.pub` - Public signing key (regenerate if changing keys)
 
 **Modify with extreme caution**:
 - `.github/workflows/build.yml` - Core build workflow

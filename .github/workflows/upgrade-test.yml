@@ -1,0 +1,33 @@
+name: Upgrade Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Full OCI image reference to boot and test"
+        required: true
+        default: "ghcr.io/joshyorko/dudley-os:stable"
+      suites:
+        description: "Comma-separated projectbluefin/testsuite suites"
+        required: false
+        default: "lifecycle"
+      chunked_enabled:
+        description: "Enable zstd:chunked migration scenarios"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  upgrade-test:
+    uses: projectbluefin/actions/.github/workflows/upgrade-test.yml@v1
+    permissions:
+      contents: read
+      packages: write
+    with:
+      image: ${{ inputs.image }}
+      suites: ${{ inputs.suites }}
+      chunked_enabled: ${{ inputs.chunked_enabled }}

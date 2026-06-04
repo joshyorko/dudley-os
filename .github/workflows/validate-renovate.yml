@@ -4,13 +4,11 @@ on:
   pull_request:
     paths:
       - ".github/renovate.json5"
-      - ".github/workflows/renovate.yml"
   push:
     branches:
       - main
     paths:
       - ".github/renovate.json5"
-      - ".github/workflows/renovate.yml"
 
 jobs:
   validate:
@@ -30,7 +28,7 @@ jobs:
         env:
           # Keep validation deterministic so config aliases do not drift.
           RENOVATE_VERSION: 43.130.0
-        run: npm install -g renovate@${RENOVATE_VERSION}
+        run: npm install -g renovate@"${RENOVATE_VERSION}"
 
       - name: Validate Renovate config
         shell: bash
