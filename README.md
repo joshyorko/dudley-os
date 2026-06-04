@@ -69,12 +69,11 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - Justfile, ShellCheck, Renovate config, and final image build checks run here
   - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
 - Production Grade Features
-  - Container signing and SBOM Generation
-  - See checklist below to enable these as they take some manual configuration
+  - Keyless container signing, SBOM attachment, and GitHub provenance attestations run on `main` publishes
 
 ### Dudley Bot Renovate
 
-Dependency updates are handled by the self-hosted GitHub Actions workflow in `.github/workflows/renovate.yml`. Set the repository secret `RENOVATE_TOKEN` to a Dudley-owned bot account or GitHub App installation token when you want Renovate pull requests to come from that identity. Without the secret, the workflow can fall back to `github.token` for repository-local runs. Bot tokens must be able to read Dependabot/vulnerability alerts so Renovate can process vulnerability fixes without warning.
+Dependency updates are handled by the central `joshyorko/renovate-config` runner. Repo-specific matching and grouping lives in `.github/renovate.json5`; do not add a repo-local Renovate workflow unless the runner model changes again. The central bot token must be able to read Dependabot/vulnerability alerts and write workflow files so Renovate can update `.github/workflows/**`.
 
 ### Homebrew Integration
 - Dudley’s shipped Brewfiles are expected from the `dsb-common` Dudley layer at `/usr/share/ublue-os/homebrew/`
@@ -113,7 +112,7 @@ The project name `dudley-os` is already set in all required files. If you fork t
 3. `README.md` (line 1): `# your-repo-name`
 4. `artifacthub-repo.yml` (line 5): `repositoryID: your-repo-name`
 5. `custom/ujust/README.md` (~line 175): `localhost/your-repo-name:stable`
-6. `.github/workflows/clean.yml` (line 23): `packages: your-repo-name`
+6. `.github/workflows/clean.yml`: `packages: your-repo-name`
 
 ### 3. Enable GitHub Actions
 
@@ -122,7 +121,7 @@ The project name `dudley-os` is already set in all required files. If you fork t
 
 Your first build will start automatically! 
 
-Note: Image signing is disabled by default. Your images will build successfully without any signing keys. Once you're ready for production, see "Optional: Enable Image Signing" below.
+Note: CI publishing uses keyless signing through GitHub Actions OIDC. No cosign private key is needed for the main publish workflow.
 
 ### 4. Customize Your Image
 
@@ -161,9 +160,9 @@ sudo bootc switch ghcr.io/joshyorko/dudley-os:stable
 sudo systemctl reboot
 ```
 
-## Optional: Enable Image Signing
+## Image Signing and Provenance
 
-Image signing is disabled by default to let you start building immediately. However, signing is strongly recommended for production use.
+Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC. The publish workflow also attaches an SPDX SBOM and pushes GitHub provenance attestations.
 
 ### Why Sign Images?
 
@@ -172,64 +171,34 @@ Image signing is disabled by default to let you start building immediately. Howe
 - Required for some enterprise/security-focused deployments
 - Industry best practice for production images
 
-### Setup Instructions
+### Verification
 
-1. Generate signing keys:
+Users can verify the published image with the repository's GitHub Actions OIDC identity:
+
 ```bash
-cosign generate-key-pair
+cosign verify \
+  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/joshyorko/dudley-os:stable
 ```
 
-This creates two files:
-- `cosign.key` (private key) - Keep this secret
-- `cosign.pub` (public key) - Commit this to your repository
-
-2. Add the private key to GitHub Secrets:
-   - Copy the entire contents of `cosign.key`
-   - Go to your repository on GitHub
-   - Navigate to Settings → Secrets and variables → Actions ([GitHub docs](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository))
-   - Click "New repository secret"
-   - Name: `SIGNING_SECRET`
-   - Value: Paste the entire contents of `cosign.key`
-   - Click "Add secret"
-
-3. Replace the contents of `cosign.pub` with your public key:
-   - Open `cosign.pub` in your repository
-   - Replace the placeholder with your actual public key
-   - Commit and push the change
-
-4. Enable signing in the workflow:
-   - Edit `.github/workflows/build.yml`
-   - Find the "OPTIONAL: Image Signing with Cosign" section.
-   - Uncomment the steps to install Cosign and sign the image (remove the `#` from the beginning of each line in that section).
-   - Commit and push the change
-
-5. Your next build will produce signed images.
-
-Important: Never commit `cosign.key` to the repository. It's already in `.gitignore`.
+The repo-local Dagger release path can still use key-based signing for ad hoc registries when `--signing-key` is provided.
 
 ## Love Your Image? Let's Go to Production
 
-Ready to take your custom OS to production? Enable these features for enhanced security, reliability, and performance:
+Ready to take your custom OS to production? Keep these gates healthy for security, reliability, and performance:
 
 ### Production Checklist
 
-- [ ] **Enable Image Signing** (Recommended)
+- [x] **Enable Image Signing**
   - Provides cryptographic verification of your images
   - Prevents tampering and ensures authenticity
-  - See "Optional: Enable Image Signing" section above for setup instructions
-  - Status: **Disabled by default** to allow immediate testing
+  - Status: **Enabled for main publishes** through keyless GitHub Actions OIDC signing
 
-- [ ] **Enable SBOM Attestation** (Recommended)
+- [x] **Enable SBOM and Provenance**
   - Generates Software Bill of Materials for supply chain security
   - Provides transparency about what's in your image
-  - Requires image signing to be enabled first
-  - To enable:
-    1. First complete image signing setup above
-    2. Edit `.github/workflows/build.yml`
-    3. Find the "OPTIONAL: SBOM Attestation" section around line 232
-    4. Uncomment the "Add SBOM Attestation" step
-    5. Commit and push
-  - Status: **Disabled by default** (requires signing first)
+  - Status: **Enabled for main publishes** through `projectbluefin/actions/bootc-build/sign-and-publish`
 
 - [ ] **Enable Image Rechunking** (Recommended)
   - Optimizes bootc image layers for better update performance
@@ -293,16 +262,19 @@ Alternative approach using a temporary tag for clarity:
 - [CoreOS rpm-ostree build-chunked-oci documentation](https://coreos.github.io/rpm-ostree/build-chunked-oci/)
 - [bootc documentation](https://containers.github.io/bootc/)
 
-### After Enabling Production Features
+### Production Publish Features
 
 Your workflow will:
-- Sign all images with your key
+- Sign published images keylessly with cosign
 - Generate and attach SBOMs
-- Provide full supply chain transparency
+- Publish GitHub provenance attestations
 
 Users can verify your images with:
 ```bash
-cosign verify --key cosign.pub ghcr.io/joshyorko/dudley-os:stable
+cosign verify \
+  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/joshyorko/dudley-os:stable
 ```
 
 ## Detailed Guides
@@ -458,9 +430,7 @@ just build && just build-qcow2 && just run-vm-qcow2
 ## Security
 
 This template provides security features for production use:
-- Optional SBOM generation (Software Bill of Materials) for supply chain transparency
-- Optional image signing with cosign for cryptographic verification
+- SBOM generation (Software Bill of Materials) for supply chain transparency
+- Keyless image signing with cosign for cryptographic verification
 - Automated security updates via Renovate
 - Build provenance tracking
-
-These security features are disabled by default to allow immediate testing. When you're ready for production, see the "Love Your Image? Let's Go to Production" section above to enable them.
