@@ -53,6 +53,7 @@ jobs:
         uses: projectbluefin/actions/bootc-build/setup-runner@6274199cfb6666180ac2fd0ad5a41bc8440e0929 # v1
         with:
           storage-backend: none
+          install-tools: '["just"]'
 
       - name: Preflight publish
         id: preflight
@@ -108,23 +109,11 @@ jobs:
         id: build_image
         shell: bash
         env:
-          LABELS: ${{ steps.metadata.outputs.labels }}
+          OCI_LABELS: ${{ steps.metadata.outputs.labels }}
         run: |
           set -euo pipefail
 
-          label_args=()
-          while IFS= read -r label; do
-            if [[ -n "${label}" ]]; then
-              label_args+=(--label "${label}")
-            fi
-          done <<< "${LABELS}"
-
-          sudo buildah build \
-            --format docker \
-            --file ./Containerfile \
-            --tag "${IMAGE_NAME}:${DEFAULT_TAG}" \
-            "${label_args[@]}" \
-            .
+          sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
 
           echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
           echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"

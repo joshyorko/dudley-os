@@ -541,7 +541,7 @@ bootc switch --mutate-in-place --transport registry ghcr.io/USERNAME/REPO:stable
 - `upgrade-test.yml` - Manual bootc upgrade and rollback gate for a supplied image ref
 - `validate-*.yml` - Pre-merge validation (shellcheck, Brewfile, Flatpak, etc.)
 
-`build.yml` builds with rootful `sudo buildah build` because `projectbluefin/actions/bootc-build/push-image` pushes with `sudo -E podman push`. Do not switch the build back to a rootless action unless the push step is changed too; rootless images are invisible to the rootful push store and fail with `image not known`.
+`build.yml` calls `sudo -E just build-ghcr` so the recipe builds into rootful container storage, matching the `projectbluefin/actions/bootc-build/push-image` rootful `sudo -E podman push` path. Do not switch the build back to a rootless action unless the push step is changed too; rootless images are invisible to the rootful push store and fail with `image not known`.
 
 **Image Tags**:
 - `:stable` - Latest stable release from main branch
