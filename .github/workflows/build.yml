@@ -44,10 +44,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-      - name: Setup runner
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@695eb75bc387dbcd9685a8e72d23439d8686cba6 # v10
+        with:
+          extra-squeeze: "false"
+
+      - name: Setup runner tools
         uses: projectbluefin/actions/bootc-build/setup-runner@6274199cfb6666180ac2fd0ad5a41bc8440e0929 # v1
         with:
-          storage-backend: btrfs
+          storage-backend: none
 
       - name: Preflight publish
         id: preflight
@@ -101,23 +106,28 @@ jobs:
 
       - name: Build Image
         id: build_image
-        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2
-        with:
-          containerfiles: |
-            ./Containerfile
-          # Postfix image name with -custom to make it a little more descriptive
-          # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ env.DEFAULT_TAG }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          oci: false
-
-      # Tag for registry
-      - name: Tag for registry
+        shell: bash
+        env:
+          LABELS: ${{ steps.metadata.outputs.labels }}
         run: |
-          for tag in ${{ steps.metadata.outputs.tags }}; do
-            podman tag ${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }} ${{ env.IMAGE_NAME }}:$tag
-          done
+          set -euo pipefail
+
+          label_args=()
+          while IFS= read -r label; do
+            if [[ -n "${label}" ]]; then
+              label_args+=(--label "${label}")
+            fi
+          done <<< "${LABELS}"
+
+          sudo buildah build \
+            --format docker \
+            --file ./Containerfile \
+            --tag "${IMAGE_NAME}:${DEFAULT_TAG}" \
+            "${label_args[@]}" \
+            .
+
+          echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
 
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
       # They also check if the runner is on the default branch so that things like the merge queue (if you enable it), are going to work
