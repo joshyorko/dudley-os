@@ -8,6 +8,7 @@ export dagger_registry_password_env := env("REGISTRY_PASSWORD_ENV", "REGISTRY_PA
 export dagger_signing_key_env := env("SIGNING_KEY_ENV", "SIGNING_SECRET")
 export dagger_signing_password_env := env("SIGNING_PASSWORD_ENV", "SIGNING_PASSWORD")
 export source_uri := env("SOURCE_URI", "https://github.com/joshyorko/dudley-os")
+just := just_executable()
 
 alias build-vm := build-qcow2
 alias rebuild-vm := rebuild-qcow2
@@ -107,11 +108,14 @@ sudoif command *args:
 # Build the image using the specified parameters
 build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
+    set -euo pipefail
 
     BUILD_ARGS=()
     FINAL_IMAGE_REF="${METADATA_IMAGE:-ghcr.io/joshyorko/${image_name}}:${tag}"
 
-    if git rev-parse --git-dir >/dev/null 2>&1; then
+    if [[ -n "${GITHUB_SHA:-}" ]]; then
+        BUILD_ARGS+=("--build-arg" "SHA_HEAD_SHORT=${GITHUB_SHA:0:7}")
+    elif git rev-parse --git-dir >/dev/null 2>&1; then
         GIT_SHA=$(git rev-parse --short HEAD)
         if [[ -n "$(git status -s)" ]]; then
             GIT_SHA="${GIT_SHA}-dirty"
@@ -122,11 +126,37 @@ build $target_image=image_name $tag=default_tag:
     BUILD_ARGS+=("--build-arg" "FINAL_IMAGE_REF=${FINAL_IMAGE_REF}")
     BUILD_ARGS+=("--build-arg" "VSCODE_REFRESH_TOKEN=$(date -u +%Y%m%d%H%M%S)")
 
+    LABEL_ARGS=()
+    while IFS= read -r label; do
+        if [[ -n "${label}" ]]; then
+            LABEL_ARGS+=("--label" "${label}")
+        fi
+    done <<< "${OCI_LABELS:-}"
+
+    if [[ "${BUILD_FORMAT:-}" == "docker" ]]; then
+        BUILD_ARGS+=("--format" "docker")
+    fi
+
     podman build \
         "${BUILD_ARGS[@]}" \
+        "${LABEL_ARGS[@]}" \
         --pull=newer \
+        --file ./Containerfile \
         --tag "${target_image}:${tag}" \
         .
+
+# Build the image for GitHub Actions in rootful container storage
+[group('Image')]
+build-ghcr $target_image=image_name $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ "${UID}" -gt "0" ]]; then
+        echo "Must run with sudo or as root."
+        exit 1
+    fi
+
+    BUILD_FORMAT=docker "{{ just }}" build "${target_image}" "${tag}"
 
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
