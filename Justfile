@@ -37,6 +37,7 @@ test-unit:
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
     bash tests/test-nvidia-variant-contract.sh
+    bash tests/test-publish-workflow-contract.sh
 
 # Run validation and unit tests
 [group('Test')]
@@ -162,6 +163,28 @@ build-ghcr $target_image=image_name $tag=default_tag:
     fi
 
     BUILD_FORMAT=docker "{{ just }}" build "${target_image}" "${tag}"
+
+# Generate an SBOM from the local image as an OCI directory.
+[group('Image')]
+gen-sbom $target_image=image_name $tag=default_tag $syft_cmd="syft":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    out_dir="sbom_out/${target_image}"
+    sbom_path="${out_dir}/sbom.json"
+    oci_dir="${out_dir}/oci-dir"
+    rm -rf "${oci_dir}"
+    mkdir -p "${out_dir}"
+    trap 'rm -rf "${oci_dir}"' EXIT
+
+    podman_cmd=(podman)
+    if [[ "${UID}" -gt "0" ]]; then
+        podman_cmd=(sudo podman)
+    fi
+
+    "${podman_cmd[@]}" save --format oci-dir -o "${oci_dir}" "${target_image}:${tag}"
+    "${syft_cmd}" --source-name "${target_image}:${tag}" "oci-dir:${oci_dir}" -o spdx-json="${sbom_path}"
+    du -sh "${sbom_path}"
 
 # Command: _rootful_load_image
 # Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.

@@ -70,7 +70,7 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - Justfile, ShellCheck, Renovate config, and final image build checks run here
   - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
 - Production Grade Features
-  - Keyless container signing, SBOM attachment, and GitHub provenance attestations run on `main` publishes
+  - Keyless container signing, local OCI-directory SBOM generation, SBOM attachment/signing, and GitHub provenance attestations run on `main` publishes
 - GPU Variant
   - `.github/workflows/build-nvidia.yml` is manual-only through GitHub Actions `workflow_dispatch`
   - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
@@ -167,7 +167,7 @@ sudo systemctl reboot
 
 ## Image Signing and Provenance
 
-Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC. The publish workflow also attaches an SPDX SBOM and pushes GitHub provenance attestations.
+Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC and push GitHub provenance attestations. SBOMs are generated from the local OCI directory before publish, then attached and signed after the image digest is pushed. This follows the upstream pattern of keeping Syft on the local image shape instead of asking `sign-and-publish` to rescan the pushed bootc image.
 
 ### Why Sign Images?
 
@@ -202,7 +202,9 @@ Ready to take your custom OS to production? Keep these gates healthy for securit
 
 - [x] **Enable SBOM and Provenance**
   - Generates Software Bill of Materials for supply chain security
-  - Provides transparency about what's in your image
+  - Attaches and signs the SBOM as an OCI referrer
+  - Publishes GitHub build provenance attestations for the pushed image
+  - Provides transparency about what's in your image and how it was built
   - Status: **Enabled for main publishes** through `projectbluefin/actions/bootc-build/sign-and-publish`
 
 - [ ] **Enable Image Rechunking** (Recommended)
