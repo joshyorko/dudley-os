@@ -70,7 +70,8 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - Justfile, ShellCheck, Renovate config, and final image build checks run here
   - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
 - Production Grade Features
-  - Keyless container signing, local OCI-directory SBOM generation, SBOM attachment/signing, and GitHub provenance attestations run on `main` publishes
+  - Keyless container signing and GitHub provenance attestations run on `main` publishes
+  - CI SBOM publishing is disabled to keep personal image builds fast
 - GPU Variant
   - `.github/workflows/build-nvidia.yml` is manual-only through GitHub Actions `workflow_dispatch`
   - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
@@ -167,7 +168,7 @@ sudo systemctl reboot
 
 ## Image Signing and Provenance
 
-Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC and push GitHub provenance attestations. SBOMs are generated from the local OCI directory before publish, then attached and signed after the image digest is pushed. This follows the upstream pattern of keeping Syft on the local image shape instead of asking `sign-and-publish` to rescan the pushed bootc image.
+Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC and push GitHub provenance attestations. SBOM generation is disabled in this personal image workflow to avoid spending hosted runner time rescanning a bootc image whose base layers already come from Universal Blue.
 
 ### Why Sign Images?
 
@@ -200,12 +201,14 @@ Ready to take your custom OS to production? Keep these gates healthy for securit
   - Prevents tampering and ensures authenticity
   - Status: **Enabled for main publishes** through keyless GitHub Actions OIDC signing
 
-- [x] **Enable SBOM and Provenance**
-  - Generates Software Bill of Materials for supply chain security
-  - Attaches and signs the SBOM as an OCI referrer
+- [x] **Enable Build Provenance**
   - Publishes GitHub build provenance attestations for the pushed image
-  - Provides transparency about what's in your image and how it was built
+  - Provides transparency about how the image was built
   - Status: **Enabled for main publishes** through `projectbluefin/actions/bootc-build/sign-and-publish`
+
+- [ ] **Enable CI SBOM Publishing**
+  - Generates Software Bill of Materials for supply chain security
+  - Status: **Disabled intentionally** to keep personal image builds fast
 
 - [ ] **Enable Image Rechunking** (Recommended)
   - Optimizes bootc image layers for better update performance
