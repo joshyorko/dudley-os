@@ -36,6 +36,7 @@ test-unit:
     set -euo pipefail
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
+    bash tests/test-nvidia-variant-contract.sh
 
 # Run validation and unit tests
 [group('Test')]
@@ -121,6 +122,10 @@ build $target_image=image_name $tag=default_tag:
             GIT_SHA="${GIT_SHA}-dirty"
         fi
         BUILD_ARGS+=("--build-arg" "SHA_HEAD_SHORT=${GIT_SHA}")
+    fi
+
+    if [[ -n "${BASE_IMAGE_REF:-}" ]]; then
+        BUILD_ARGS+=("--build-arg" "BASE_IMAGE_REF=${BASE_IMAGE_REF}")
     fi
 
     BUILD_ARGS+=("--build-arg" "FINAL_IMAGE_REF=${FINAL_IMAGE_REF}")

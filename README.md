@@ -29,6 +29,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
+- Manual Nvidia build workflow, based on `ghcr.io/ublue-os/bluefin-dx-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia`
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
@@ -36,7 +37,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-05-26*
+*Last updated: 2026-06-06*
 
 ---
 
@@ -70,6 +71,10 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
 - Production Grade Features
   - Keyless container signing, SBOM attachment, and GitHub provenance attestations run on `main` publishes
+- GPU Variant
+  - `.github/workflows/build-nvidia.yml` is manual-only through GitHub Actions `workflow_dispatch`
+  - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
+  - Uses the upstream Bluefin DX Nvidia image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
 
 ### Dudley Bot Renovate
 

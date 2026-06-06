@@ -1,0 +1,124 @@
+---
+name: Build Nvidia container image
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_DESC: "Dudley OS Nvidia - GPU-enabled image built on Bluefin DX Nvidia"
+  IMAGE_KEYWORDS: "bootc,ublue,universal-blue,nvidia,gpu"
+  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
+  IMAGE_NAME: "${{ github.event.repository.name }}"
+  IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  DEFAULT_TAG: "nvidia-stable"
+  NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:stable@sha256:1b1a65e0c8ac9718ecaa326c73568c0fe48f589165cdf3f6768911e5ae86d9cd"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_push_nvidia:
+    name: Build and push Nvidia image
+    runs-on: ubuntu-24.04
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+
+    steps:
+      - name: Prepare environment
+        run: |
+          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> "${GITHUB_ENV}"
+          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "${GITHUB_ENV}"
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Setup runner tools
+        uses: projectbluefin/actions/bootc-build/setup-runner@622073d27a051f1eed7b874b9b71710141a5e60e # v1
+        with:
+          storage-backend: none
+          install-tools: '["just"]'
+
+      - name: Preflight publish
+        id: preflight
+        uses: projectbluefin/actions/bootc-build/preflight@622073d27a051f1eed7b874b9b71710141a5e60e # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.IMAGE_NAME }}
+
+      - name: Get current date
+        id: date
+        run: |
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_OUTPUT}"
+
+      - name: Image Metadata
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6
+        id: metadata
+        with:
+          tags: |
+            type=raw,value=nvidia
+            type=raw,value=nvidia-stable
+            type=raw,value=stable-nvidia
+            type=raw,value=nvidia.{{date 'YYYYMMDD'}}
+            type=raw,value=nvidia-stable.{{date 'YYYYMMDD'}}
+            type=raw,value=stable-nvidia.{{date 'YYYYMMDD'}}
+            type=sha
+          labels: |
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/${{ github.sha }}/README.md
+            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.documentation=https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/${{ github.sha }}/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/${{ github.sha }}/Containerfile
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/tree/${{ github.sha }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            io.artifacthub.package.deprecated=false
+            io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
+            io.artifacthub.package.license=Apache-2.0
+            io.artifacthub.package.logo-url=${{ env.IMAGE_LOGO_URL }}
+            io.artifacthub.package.prerelease=false
+            containers.bootc=1
+          sep-tags: " "
+          sep-annotations: " "
+
+      - name: Build Nvidia image
+        id: build_image
+        shell: bash
+        env:
+          OCI_LABELS: ${{ steps.metadata.outputs.labels }}
+        run: |
+          set -euo pipefail
+
+          BASE_IMAGE_REF="${NVIDIA_BASE_IMAGE_REF}" sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
+
+          echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Push To GHCR
+        id: push
+        uses: projectbluefin/actions/bootc-build/push-image@622073d27a051f1eed7b874b9b71710141a5e60e # v1
+        with:
+          image-name: ${{ env.IMAGE_NAME }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          default-tag: ${{ env.DEFAULT_TAG }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sign and publish provenance
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@622073d27a051f1eed7b874b9b71710141a5e60e # v1
+        with:
+          image: ${{ steps.preflight.outputs.image-ref }}
+          digest: ${{ steps.push.outputs.digest }}
+          signing-mode: keyless
+          generate-sbom: "true"
+          push-attestation: "true"
+          certificate-identity-regexp: '^https://github\.com/joshyorko/dudley-os/\.github/workflows/build-nvidia\.yml@refs/heads/main$'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.IMAGE_NAME }}
