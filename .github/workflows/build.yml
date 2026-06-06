@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Setup runner tools
-        uses: projectbluefin/actions/bootc-build/setup-runner@463259c95513eadc034d3d533f67ee97e3fac42a # v1
+        uses: projectbluefin/actions/bootc-build/setup-runner@622073d27a051f1eed7b874b9b71710141a5e60e # v1
         with:
           storage-backend: none
           install-tools: '["just"]'
@@ -55,7 +55,7 @@ jobs:
       - name: Preflight publish
         id: preflight
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/preflight@463259c95513eadc034d3d533f67ee97e3fac42a # v1
+        uses: projectbluefin/actions/bootc-build/preflight@622073d27a051f1eed7b874b9b71710141a5e60e # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
@@ -120,7 +120,7 @@ jobs:
       - name: Push To GHCR
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: push
-        uses: projectbluefin/actions/bootc-build/push-image@463259c95513eadc034d3d533f67ee97e3fac42a # v1
+        uses: projectbluefin/actions/bootc-build/push-image@622073d27a051f1eed7b874b9b71710141a5e60e # v1
         with:
           image-name: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
@@ -129,7 +129,7 @@ jobs:
 
       - name: Sign and publish provenance
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/sign-and-publish@463259c95513eadc034d3d533f67ee97e3fac42a # v1
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@622073d27a051f1eed7b874b9b71710141a5e60e # v1
         with:
           image: ${{ steps.preflight.outputs.image-ref }}
           digest: ${{ steps.push.outputs.digest }}
