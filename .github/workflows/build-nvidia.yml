@@ -41,14 +41,14 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Setup runner tools
-        uses: projectbluefin/actions/bootc-build/setup-runner@6231015b336556d2ff0adc1d1e59514bf19dcb42 # v1
+        uses: projectbluefin/actions/bootc-build/setup-runner@34f00f9304a19ffeab55e30646ad48352c0d3c8b # v1
         with:
           storage-backend: none
           install-tools: '["just"]'
 
       - name: Preflight publish
         id: preflight
-        uses: projectbluefin/actions/bootc-build/preflight@6231015b336556d2ff0adc1d1e59514bf19dcb42 # v1
+        uses: projectbluefin/actions/bootc-build/preflight@34f00f9304a19ffeab55e30646ad48352c0d3c8b # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
@@ -104,7 +104,7 @@ jobs:
 
       - name: Push To GHCR
         id: push
-        uses: projectbluefin/actions/bootc-build/push-image@6231015b336556d2ff0adc1d1e59514bf19dcb42 # v1
+        uses: projectbluefin/actions/bootc-build/push-image@34f00f9304a19ffeab55e30646ad48352c0d3c8b # v1
         with:
           image-name: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
@@ -112,7 +112,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sign image and publish provenance
-        uses: projectbluefin/actions/bootc-build/sign-and-publish@6231015b336556d2ff0adc1d1e59514bf19dcb42 # v1
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@34f00f9304a19ffeab55e30646ad48352c0d3c8b # v1
         with:
           image: ${{ steps.preflight.outputs.image-ref }}
           digest: ${{ steps.push.outputs.digest }}
