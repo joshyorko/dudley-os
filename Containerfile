@@ -40,8 +40,8 @@ FROM scratch AS ctx
 COPY build /build
 COPY custom /custom
 # Shared DSB organisation layer – product-agnostic configs consumed by all DSB images
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:5b52eb7fc35539efaf0dc8797ba14546c13e2c8f8a3dbce1035058822afc9f93 /system_files/shared /oci/dsb-common/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:5b52eb7fc35539efaf0dc8797ba14546c13e2c8f8a3dbce1035058822afc9f93 /system_files/dudley /oci/dsb-common/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:c58c79c77c44ed4584a13835d1a6302271e8e7c2e0640fa281e512cb64e3c7bc /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:c58c79c77c44ed4584a13835d1a6302271e8e7c2e0640fa281e512cb64e3c7bc /system_files/dudley /oci/dsb-common/dudley
 
 # Base Image - inherit Bluefin DX directly so Bluefin userland, shell, MOTD,
 # image metadata, and developer tooling stay internally consistent.
