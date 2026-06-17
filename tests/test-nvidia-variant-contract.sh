@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,17 +17,24 @@ fi
 
 for automatic_trigger in 'pull_request:' 'push:' 'schedule:' 'merge_group:'; do
     if grep -q "^  ${automatic_trigger}" "${WORKFLOW}"; then
-        echo "FAIL: Nvidia workflow must not include automatic trigger ${automatic_trigger}" >&2
+        echo "FAIL: Nvidia workflow must not automatically trigger ${automatic_trigger}" >&2
         exit 1
     fi
 done
 
 if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:stable@sha256:1b1a65e0c8ac9718ecaa326c73568c0fe48f589165cdf3f6768911e5ae86d9cd"' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must pin the Bluefin DX Nvidia stable base image" >&2
+    echo "FAIL: Nvidia workflow must pin Bluefin DX Nvidia stable base image" >&2
     exit 1
 fi
 
-for tag in 'type=raw,value=nvidia' 'type=raw,value=nvidia-stable' "type=raw,value=nvidia.{{date 'YYYYMMDD'}}"; do
+for tag in \
+    'type=raw,value=nvidia' \
+    'type=raw,value=nvidia-latest' \
+    'type=raw,value=latest-nvidia' \
+    'type=raw,value=nvidia-stable' \
+    "type=raw,value=nvidia.{{date 'YYYYMMDD'}}" \
+    "type=raw,value=nvidia-latest.{{date 'YYYYMMDD'}}" \
+    "type=raw,value=latest-nvidia.{{date 'YYYYMMDD'}}"; do
     if ! grep -q "${tag}" "${WORKFLOW}"; then
         echo "FAIL: Nvidia workflow missing expected tag ${tag}" >&2
         exit 1
@@ -40,9 +46,13 @@ if ! grep -Fq "certificate-identity-regexp: '^https://github\\.com/joshyorko/dud
     exit 1
 fi
 
-# shellcheck disable=SC2016
-if ! grep -q 'BASE_IMAGE_REF="${NVIDIA_BASE_IMAGE_REF}" sudo -E "$(command -v just)" build-ghcr' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must pass the Nvidia base image into the build" >&2
+if ! grep -Fq "BASE_IMAGE_REF=\"\${NVIDIA_BASE_IMAGE_REF}\" \\" "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow must pass Nvidia base image into build" >&2
+    exit 1
+fi
+
+if ! grep -Fq "METADATA_IMAGE=\"\${IMAGE_REGISTRY}/\${IMAGE_NAME}\" \\" "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow must pass canonical image ref into build metadata" >&2
     exit 1
 fi
 

@@ -64,9 +64,13 @@ jobs:
         with:
           tags: |
             type=raw,value=nvidia
+            type=raw,value=nvidia-latest
+            type=raw,value=latest-nvidia
             type=raw,value=nvidia-stable
             type=raw,value=stable-nvidia
             type=raw,value=nvidia.{{date 'YYYYMMDD'}}
+            type=raw,value=nvidia-latest.{{date 'YYYYMMDD'}}
+            type=raw,value=latest-nvidia.{{date 'YYYYMMDD'}}
             type=raw,value=nvidia-stable.{{date 'YYYYMMDD'}}
             type=raw,value=stable-nvidia.{{date 'YYYYMMDD'}}
             type=sha
@@ -97,7 +101,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          BASE_IMAGE_REF="${NVIDIA_BASE_IMAGE_REF}" sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
+          BASE_IMAGE_REF="${NVIDIA_BASE_IMAGE_REF}" \
+            METADATA_IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAME}" \
+            sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
 
           echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
           echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
