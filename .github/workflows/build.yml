@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup runner tools
-        uses: projectbluefin/actions/bootc-build/setup-runner@2355564605245ab49f54f1c2be500b1cc48c9739 # v1
+        uses: projectbluefin/actions/bootc-build/setup-runner@793eea3015e29223e60fa0ffc7ceb47ca8a1d250 # v1
         with:
           storage-backend: none
           install-tools: '["just"]'
@@ -55,7 +55,7 @@ jobs:
       - name: Preflight publish
         id: preflight
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/preflight@2355564605245ab49f54f1c2be500b1cc48c9739 # v1
+        uses: projectbluefin/actions/bootc-build/preflight@793eea3015e29223e60fa0ffc7ceb47ca8a1d250 # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
@@ -120,7 +120,7 @@ jobs:
       - name: Push To GHCR
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: push
-        uses: projectbluefin/actions/bootc-build/push-image@2355564605245ab49f54f1c2be500b1cc48c9739 # v1
+        uses: projectbluefin/actions/bootc-build/push-image@793eea3015e29223e60fa0ffc7ceb47ca8a1d250 # v1
         with:
           image-name: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
@@ -129,7 +129,7 @@ jobs:
 
       - name: Sign image and publish provenance
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/sign-and-publish@2355564605245ab49f54f1c2be500b1cc48c9739 # v1
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@793eea3015e29223e60fa0ffc7ceb47ca8a1d250 # v1
         with:
           image: ${{ steps.preflight.outputs.image-ref }}
           digest: ${{ steps.push.outputs.digest }}
