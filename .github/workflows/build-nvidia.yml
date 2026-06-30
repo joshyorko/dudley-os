@@ -3,6 +3,14 @@ name: Build Nvidia container image
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
 
 env:
   IMAGE_DESC: "Dudley OS Nvidia - GPU-enabled image built on Bluefin DX Nvidia"
@@ -10,8 +18,8 @@ env:
   IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
   IMAGE_NAME: "${{ github.event.repository.name }}"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  DEFAULT_TAG: "nvidia-stable"
-  NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:stable@sha256:1b1a65e0c8ac9718ecaa326c73568c0fe48f589165cdf3f6768911e5ae86d9cd"
+  DEFAULT_TAG: "nvidia-latest"
+  NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:latest@sha256:1426cf94439e6794bb4539eb80fff979930c6ae0d4b97457158983ece2ac653f"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
@@ -22,7 +30,6 @@ jobs:
   build_push_nvidia:
     name: Build and push Nvidia image
     runs-on: ubuntu-24.04
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
 
     permissions:
       contents: read
@@ -48,6 +55,7 @@ jobs:
 
       - name: Preflight publish
         id: preflight
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: projectbluefin/actions/bootc-build/preflight@b2481faee5bad2f2a25b64d6269b06399a2f44c0 # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -110,6 +118,7 @@ jobs:
 
       - name: Push To GHCR
         id: push
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: projectbluefin/actions/bootc-build/push-image@b2481faee5bad2f2a25b64d6269b06399a2f44c0 # v1
         with:
           image-name: ${{ env.IMAGE_NAME }}
@@ -118,6 +127,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sign image and publish provenance
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: projectbluefin/actions/bootc-build/sign-and-publish@b2481faee5bad2f2a25b64d6269b06399a2f44c0 # v1
         with:
           image: ${{ steps.preflight.outputs.image-ref }}

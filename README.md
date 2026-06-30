@@ -29,7 +29,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
-- Manual Nvidia build workflow, based on `ghcr.io/ublue-os/bluefin-dx-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia`
+- Nvidia build workflow based on `ghcr.io/ublue-os/bluefin-dx-nvidia:latest` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
@@ -37,7 +37,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-06-06*
+*Last updated: 2026-06-30*
 
 ---
 
@@ -73,9 +73,10 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - Keyless container signing and GitHub provenance attestations run on `main` publishes
   - CI SBOM publishing is disabled to keep personal image builds fast
 - GPU Variant
-  - `.github/workflows/build-nvidia.yml` is manual-only through GitHub Actions `workflow_dispatch`
-  - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
-  - Uses the upstream Bluefin DX Nvidia image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
+  - `.github/workflows/build-nvidia.yml` runs on pull requests, main pushes, and GitHub Actions `workflow_dispatch`
+  - Pull requests build the Nvidia variant without publishing; main/default-branch publishes, signs, and attests it
+  - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-latest`, `latest-nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
+  - Uses the upstream Bluefin DX Nvidia `latest` image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
 
 ### Dudley Bot Renovate
 

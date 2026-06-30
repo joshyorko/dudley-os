@@ -3,3 +3,6 @@ _build_*
 output
 _build-*/**
 .dagger/internal/
+.tokensave
+.codex/
+.serena/

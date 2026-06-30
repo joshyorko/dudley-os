@@ -4,28 +4,63 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKFLOW="${ROOT_DIR}/.github/workflows/build-nvidia.yml"
 JUSTFILE="${ROOT_DIR}/Justfile"
+RENOVATE_CONFIG="${ROOT_DIR}/.github/renovate.json5"
 
 if [[ ! -f "${WORKFLOW}" ]]; then
-    echo "FAIL: missing manual Nvidia build workflow" >&2
+    echo "FAIL: missing Nvidia build workflow" >&2
     exit 1
 fi
 
-if ! grep -q '^  workflow_dispatch:$' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must be manually dispatched" >&2
-    exit 1
-fi
+for trigger in 'workflow_dispatch:' 'pull_request:' 'push:'; do
+    if ! grep -q "^  ${trigger}" "${WORKFLOW}"; then
+        echo "FAIL: Nvidia workflow must support ${trigger}" >&2
+        exit 1
+    fi
+done
 
-for automatic_trigger in 'pull_request:' 'push:' 'schedule:' 'merge_group:'; do
+for automatic_trigger in 'schedule:' 'merge_group:'; do
     if grep -q "^  ${automatic_trigger}" "${WORKFLOW}"; then
         echo "FAIL: Nvidia workflow must not automatically trigger ${automatic_trigger}" >&2
         exit 1
     fi
 done
 
-if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:stable@sha256:1b1a65e0c8ac9718ecaa326c73568c0fe48f589165cdf3f6768911e5ae86d9cd"' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must pin Bluefin DX Nvidia stable base image" >&2
+if grep -Fq "if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)" "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow build job must run on pull requests, not only the default branch" >&2
     exit 1
 fi
+
+publish_guard="if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+if [[ "$(grep -Fc "${publish_guard}" "${WORKFLOW}")" -lt 3 ]]; then
+    echo "FAIL: Nvidia workflow publish/sign steps must be guarded to the default branch" >&2
+    exit 1
+fi
+
+if ! grep -q 'DEFAULT_TAG: "nvidia-latest"' "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow default tag must describe the latest Nvidia variant" >&2
+    exit 1
+fi
+
+if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:latest@sha256:1426cf94439e6794bb4539eb80fff979930c6ae0d4b97457158983ece2ac653f"' "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow must pin Bluefin DX Nvidia latest base image" >&2
+    exit 1
+fi
+
+if [[ ! -f "${RENOVATE_CONFIG}" ]]; then
+    echo "FAIL: missing Renovate config" >&2
+    exit 1
+fi
+
+for renovate_needle in \
+    '"managerFilePatterns": ["/^\\.github\\/workflows\\/build-nvidia\\.yml$/"]' \
+    'NVIDIA_BASE_IMAGE_REF' \
+    'bluefin-dx-nvidia' \
+    '"datasourceTemplate": "docker"'; do
+    if ! grep -Fq "${renovate_needle}" "${RENOVATE_CONFIG}"; then
+        echo "FAIL: Renovate config must track Nvidia base image refs (${renovate_needle})" >&2
+        exit 1
+    fi
+done
 
 for tag in \
     'type=raw,value=nvidia' \
@@ -68,4 +103,4 @@ if ! grep -q 'BUILD_ARGS+=("--build-arg" "BASE_IMAGE_REF=${BASE_IMAGE_REF}")' "$
     exit 1
 fi
 
-echo "PASS: Nvidia variant workflow is manual, pinned, tagged, signed, and GPU-base aware"
+echo "PASS: Nvidia variant workflow runs on PR/main, tracks latest, is tagged/signed, and is GPU-base aware"
