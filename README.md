@@ -33,11 +33,12 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
+- Stale inherited Bazaar RPM is removed during final assembly so Bluefin's Flatpak Bazaar remains the single app-store implementation and GNOME does not see duplicate `io.github.kolunmi.Bazaar.desktop` launchers
 - GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-06-30*
+*Last updated: 2026-07-05*
 
 ---
 

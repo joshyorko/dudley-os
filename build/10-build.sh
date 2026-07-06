@@ -64,6 +64,14 @@ echo "::group:: Install Packages"
 # supplied by dsb-common so all Dudley consumers use the same RPM source.
 /ctx/build/google-chrome.sh
 
+# Bluefin previously shipped a fallback Bazaar RPM while also preinstalling
+# Bazaar as a system Flatpak. If an inherited base still contains the RPM, GNOME
+# sees duplicate io.github.kolunmi.Bazaar.desktop files and can launch the wrong
+# one. Keep the Flatpak Bazaar path and remove only the stale RPM payload.
+if rpm -q bazaar >/dev/null 2>&1; then
+    dnf -y remove bazaar
+fi
+
 echo "::endgroup::"
 
 echo "::group:: System Configuration"
