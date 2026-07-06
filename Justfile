@@ -35,6 +35,7 @@ test-unit:
     #!/usr/bin/bash
     set -euo pipefail
     bash tests/test-base-image-contract.sh
+    bash tests/test-bazaar-flatpak-contract.sh
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
     bash tests/test-nvidia-variant-contract.sh
