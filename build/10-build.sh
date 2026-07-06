@@ -64,13 +64,29 @@ echo "::group:: Install Packages"
 # supplied by dsb-common so all Dudley consumers use the same RPM source.
 /ctx/build/google-chrome.sh
 
-# Bluefin previously shipped a fallback Bazaar RPM while also preinstalling
-# Bazaar as a system Flatpak. If an inherited base still contains the RPM, GNOME
-# sees duplicate io.github.kolunmi.Bazaar.desktop files and can launch the wrong
-# one. Keep the Flatpak Bazaar path and remove only the stale RPM payload.
-if rpm -q bazaar >/dev/null 2>&1; then
-    dnf -y remove bazaar
-fi
+# Bluefin used to ship a fallback Bazaar RPM before Bazaar became a system
+# Flatpak preinstall. If an inherited base still has that RPM, do not remove the
+# package: the RPM can own /usr/share/flatpak/preinstall.d/bazaar.preinstall,
+# and removing it causes Bazaar to disappear on upgrades. Remove only the stale
+# RPM launcher/appstream metadata so GNOME does not show a duplicate beside the
+# Flatpak launcher.
+rm -f \
+    /usr/share/applications/io.github.kolunmi.Bazaar.desktop \
+    /usr/share/metainfo/io.github.kolunmi.Bazaar.metainfo.xml \
+    /usr/share/appdata/io.github.kolunmi.Bazaar.appdata.xml
+
+# Keep Bluefin's Flatpak preinstall contract explicit for inherited bases and
+# Nvidia variants. Removing this file makes flatpak-preinstall uninstall Bazaar
+# from user systems.
+mkdir -p /usr/share/flatpak/preinstall.d
+cat >/usr/share/flatpak/preinstall.d/bazaar.preinstall <<'EOF'
+# NEVER REMOVE THIS FILE
+# THIS WILL REMOVE BAZAAR FROM EVERYONES SYSTEMS IF WE REMOVE THIS
+
+[Flatpak Preinstall io.github.kolunmi.Bazaar]
+Branch=stable
+IsRuntime=false
+EOF
 
 echo "::endgroup::"
 
