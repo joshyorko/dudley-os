@@ -7,7 +7,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
 
 jobs:
-  delete-older-than-90:
+  delete-older-than-30:
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -16,7 +16,7 @@ jobs:
         uses: projectbluefin/actions/bootc-build/ghcr-cleanup@d8f871c0ca7a868339d3c175200a7319492473c7 # v1
         with:
           packages: dudley-os
-          older-than: 90 days
+          older-than: 30 days
           keep-n-tagged: "7"
           keep-n-untagged: "7"
           github-token: ${{ secrets.GITHUB_TOKEN }}
