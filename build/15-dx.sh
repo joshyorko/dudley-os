@@ -125,9 +125,11 @@ if command -v nvidia-smi >/dev/null 2>&1; then
     command -v nvidia-smi >/dev/null
     command -v nvidia-settings >/dev/null
     command -v nvidia-ctk >/dev/null
-    command -v nvidia-container-cli >/dev/null
+    command -v nvidia-cdi-hook >/dev/null
+    command -v nvidia-container-runtime >/dev/null
     test -f /etc/nvidia-container-runtime/config.toml
-    test -f /etc/cdi/nvidia.yaml
+    test -f /etc/systemd/system/nvidia-cdi-refresh.path
+    test -f /etc/systemd/system/nvidia-cdi-refresh.service
     find /usr/lib/modules -type f -name 'nvidia.ko*' -print -quit | grep -q .
 else
     for package in "${AMD_DX_PACKAGES[@]}"; do

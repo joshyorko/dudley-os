@@ -77,10 +77,22 @@ for required in \
     'command -v nvidia-smi' \
     'command -v nvidia-settings' \
     'command -v nvidia-ctk' \
-    'command -v nvidia-container-cli' \
+    'command -v nvidia-cdi-hook' \
+    'command -v nvidia-container-runtime' \
+    '/etc/systemd/system/nvidia-cdi-refresh.path' \
+    '/etc/systemd/system/nvidia-cdi-refresh.service' \
     '/usr/share/flatpak/preinstall.d/bazaar.preinstall'; do
     if ! grep -Fq "${required}" "${INSTALLER}"; then
         echo "FAIL: Dudley DX installer is missing runtime validation: ${required}" >&2
+        exit 1
+    fi
+done
+
+for obsolete in \
+    'command -v nvidia-container-cli' \
+    '/etc/cdi/nvidia.yaml'; do
+    if grep -Fq "${obsolete}" "${INSTALLER}"; then
+        echo "FAIL: Dudley DX installer must not require the obsolete NVIDIA contract: ${obsolete}" >&2
         exit 1
     fi
 done
