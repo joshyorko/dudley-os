@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+# shellcheck source=/dev/null
+source /ctx/build/bootc-accounts.sh
+
 echo "::group:: Restore Dudley DX runtime"
 
 FEDORA_DX_PACKAGES=(
@@ -100,6 +103,11 @@ dnf5 install -y --enablerepo=code code
 cleanup_third_party_repos
 trap - EXIT
 
+# RPMs installed on top of an already-finalized bootc base add service accounts
+# under /etc. Promote them to the immutable account database so upgrades retain
+# the host's /etc while still resolving qemu, libvirt, Docker, and related users.
+promote_bootc_system_accounts /
+
 systemctl enable docker.socket
 systemctl enable podman.socket
 systemctl enable libvirtd.socket
@@ -119,7 +127,18 @@ for command in docker podman code virt-manager; do
     }
 done
 
-test -f /usr/share/flatpak/preinstall.d/bazaar.preinstall
+for path in \
+    /usr/bin/ujust \
+    /usr/share/ublue-os/just/default.just \
+    /usr/share/ublue-os/homebrew/cli.Brewfile \
+    /usr/lib/systemd/user/bluefin-dynamic-wallpaper.service \
+    /usr/lib/systemd/user/io.github.kolunmi.Bazaar.service \
+    /usr/share/flatpak/preinstall.d/bazaar.preinstall; do
+    test -e "${path}" || {
+        echo "Missing Project Bluefin runtime contract: ${path}" >&2
+        exit 1
+    }
+done
 
 if command -v nvidia-smi >/dev/null 2>&1; then
     command -v nvidia-smi >/dev/null

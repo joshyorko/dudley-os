@@ -36,6 +36,7 @@ test-unit:
     set -euo pipefail
     bash tests/test-base-image-contract.sh
     bash tests/test-bazaar-flatpak-contract.sh
+    bash tests/test-bootc-account-contract.sh
     bash tests/test-dx-runtime-contract.sh
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh

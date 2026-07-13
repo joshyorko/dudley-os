@@ -81,6 +81,11 @@ for required in \
     'command -v nvidia-container-runtime' \
     '/etc/systemd/system/nvidia-cdi-refresh.path' \
     '/etc/systemd/system/nvidia-cdi-refresh.service' \
+    '/usr/bin/ujust' \
+    '/usr/share/ublue-os/just/default.just' \
+    '/usr/share/ublue-os/homebrew/cli.Brewfile' \
+    '/usr/lib/systemd/user/bluefin-dynamic-wallpaper.service' \
+    '/usr/lib/systemd/user/io.github.kolunmi.Bazaar.service' \
     '/usr/share/flatpak/preinstall.d/bazaar.preinstall'; do
     if ! grep -Fq "${required}" "${INSTALLER}"; then
         echo "FAIL: Dudley DX installer is missing runtime validation: ${required}" >&2
