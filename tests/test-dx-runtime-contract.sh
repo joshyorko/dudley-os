@@ -7,6 +7,7 @@ ASSEMBLY="${ROOT_DIR}/build/10-build.sh"
 INSTALLER="${ROOT_DIR}/build/15-dx.sh"
 GROUP_HELPER="${ROOT_DIR}/custom/system_files/usr/libexec/dudley-dx-groups"
 GROUP_SERVICE="${ROOT_DIR}/custom/system_files/usr/lib/systemd/system/dudley-dx-groups.service"
+TERMINAL_DEFAULTS="${ROOT_DIR}/custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override"
 
 for required_file in "${INSTALLER}" "${GROUP_HELPER}" "${GROUP_SERVICE}"; do
     if [[ ! -f "${required_file}" ]]; then
@@ -36,6 +37,7 @@ required_packages=(
     docker-ce-rootless-extras
     docker-compose-plugin
     flatpak-builder
+    jetbrains-mono-fonts-all
     libvirt
     podman-compose
     podman-machine
@@ -54,6 +56,20 @@ for package in "${required_packages[@]}"; do
     fi
 done
 
+if [[ ! -f "${TERMINAL_DEFAULTS}" ]]; then
+    echo "FAIL: missing Dudley terminal defaults" >&2
+    exit 1
+fi
+
+for required in \
+    'font-name="Adwaita Sans 12"' \
+    'monospace-font-name="JetBrains Mono 16"'; do
+    if ! grep -Fq "${required}" "${TERMINAL_DEFAULTS}"; then
+        echo "FAIL: Dudley terminal defaults are missing ${required}" >&2
+        exit 1
+    fi
+done
+
 for package in 7zip 7zip-standalone; do
     if ! grep -Eq "^[[:space:]]+${package}$" "${INSTALLER}"; then
         echo "FAIL: Dudley DX installer must use the Fedora archive package ${package}" >&2
@@ -68,6 +84,9 @@ fi
 
 # shellcheck disable=SC2016
 for required in \
+    'source /ctx/build/copr-helpers.sh' \
+    'copr_install_isolated "che/nerd-fonts" nerd-fonts' \
+    'rpm -q nerd-fonts' \
     'https://download.docker.com/linux/fedora/docker-ce.repo' \
     'https://packages.microsoft.com/yumrepos/vscode' \
     'systemctl enable docker.socket' \

@@ -73,6 +73,8 @@ grep -q '^kdlocpanda:' "${test_root}/etc/group"
 
 for required in \
     'source /ctx/build/bootc-accounts.sh' \
+    'getent group plugdev' \
+    'groupadd --system plugdev' \
     'promote_bootc_system_accounts /'; do
     if ! grep -Fq "${required}" "${INSTALLER}"; then
         echo "FAIL: DX installation must run bootc account promotion (${required})" >&2
