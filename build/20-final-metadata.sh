@@ -3,7 +3,7 @@
 set -euo pipefail
 
 final_image_ref="${FINAL_IMAGE_REF:-ghcr.io/joshyorko/dudley-os:stable}"
-base_image_ref="${BASE_IMAGE_REF:-ghcr.io/ublue-os/bluefin-dx:stable}"
+base_image_ref="${BASE_IMAGE_REF:-ghcr.io/projectbluefin/bluefin:stable}"
 git_commit="${SHA_HEAD_SHORT:-unknown}"
 
 manifest_path="${MANIFEST_PATH:-/etc/dudley/build-manifest.json}"
@@ -184,7 +184,7 @@ stamp_image_identity() {
         fedora_version="$(. "${os_release_path}" && printf '%s' "${VERSION_ID:-unknown}")"
     fi
 
-    local image_flavor="dx"
+    local image_flavor="main"
     local existing_image_info='{}'
     if [[ -f "${image_info_path}" ]]; then
         existing_image_info="$(cat "${image_info_path}")"
@@ -214,7 +214,10 @@ stamp_image_identity() {
         }' <<<"${existing_image_info}" > "${image_info_path}"
 
     if [[ -f "${os_release_path}" ]]; then
-        set_os_release_value "VARIANT_ID" "${base_image_name}"
+        local inherited_variant_id
+        # shellcheck source=/dev/null
+        inherited_variant_id="$(. "${os_release_path}" && printf '%s' "${VARIANT_ID:-${base_image_name}}")"
+        set_os_release_value "VARIANT_ID" "${inherited_variant_id}"
         set_os_release_value "NAME" "Dudley OS"
         set_os_release_value "PRETTY_NAME" "Dudley OS (${image_tag})"
         set_os_release_value "HOME_URL" "${repo_url}"

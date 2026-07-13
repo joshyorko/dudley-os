@@ -28,17 +28,17 @@ mkdir -p \
 
 cat >"$IMAGE_INFO_PATH" <<'JSON'
 {
-  "image-flavor": "dx",
-  "base-image-name": "bluefin-dx",
+  "image-flavor": "main",
+  "base-image-name": "silverblue",
   "fedora-version": "44"
 }
 JSON
 
 cat >"$OS_RELEASE_FILE" <<'EOF'
 VERSION_ID=44
-VARIANT_ID=bluefin-dx
+VARIANT_ID=bluefin
 NAME="Bluefin"
-PRETTY_NAME="Bluefin DX"
+PRETTY_NAME="Bluefin"
 EOF
 
 cat >"$WALLPAPER_HOOK" <<'EOF'
@@ -66,7 +66,7 @@ cat >"$CODE_INSIDERS_SETTINGS" <<'JSON'
 JSON
 
 FINAL_IMAGE_REF="ghcr.io/joshyorko/dudley-os:stable" \
-	BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:stable@sha256:abc123" \
+	BASE_IMAGE_REF="ghcr.io/projectbluefin/bluefin:stable@sha256:abc123" \
 	SHA_HEAD_SHORT="abc1234" \
 	MANIFEST_PATH="$MANIFEST_PATH" \
 	IMAGE_INFO_PATH="$IMAGE_INFO_PATH" \
@@ -96,11 +96,11 @@ assert_json '."image-name"' "dudley-os"
 assert_json '."image-vendor"' "joshyorko"
 assert_json '."image-ref"' "ostree-image-signed:docker://ghcr.io/joshyorko/dudley-os"
 assert_json '."image-tag"' "stable"
-assert_json '."image-flavor"' "dx"
-assert_json '."base-image-name"' "bluefin-dx"
-assert_json '."base-image-ref"' "ghcr.io/ublue-os/bluefin-dx:stable@sha256:abc123"
+assert_json '."image-flavor"' "main"
+assert_json '."base-image-name"' "silverblue"
+assert_json '."base-image-ref"' "ghcr.io/projectbluefin/bluefin:stable@sha256:abc123"
 
-if ! grep -q '^VARIANT_ID="bluefin-dx"$' "$OS_RELEASE_FILE"; then
+if ! grep -q '^VARIANT_ID="bluefin"$' "$OS_RELEASE_FILE"; then
 	echo "FAIL: os-release VARIANT_ID did not preserve inherited base variant" >&2
 	exit 1
 fi
@@ -137,4 +137,4 @@ jq -e --arg path "$CODE_SETTINGS" '.hooks["vscode-extensions"].dependencies | in
 jq -e --arg path "$CODE_INSIDERS_SETTINGS" '.hooks["vscode-extensions"].dependencies | index($path)' "$MANIFEST_PATH" >/dev/null
 jq -e '.hooks["vscode-extensions"].metadata.extension_count == 2' "$MANIFEST_PATH" >/dev/null
 
-echo "PASS: Dudley final metadata preserves Bluefin DX runtime contracts"
+echo "PASS: Dudley final metadata preserves Project Bluefin runtime contracts"

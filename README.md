@@ -2,15 +2,15 @@
 
 A custom bootc operating system image for the DSB organisation, built on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be a **thin product image** that consumes shared configuration from [`dsb-common`](https://github.com/joshyorko/dsb-common) and adds Dudley-specific branding and tooling on top.
 
-This image uses a **thin-product multi-stage build**. Dudley inherits the full Bluefin DX base image, then layers in DSB shared configuration plus Dudley-specific payloads on top. See the [Architecture](#architecture) section below for details.
+This image uses a **thin-product multi-stage build**. Dudley inherits the canonical Project Bluefin base image, then layers in DSB shared configuration plus Dudley-specific payloads on top. See the [Architecture](#architecture) section below for details.
 
-**Dudley now inherits Bluefin DX directly instead of reconstructing Bluefin from Silverblue plus partial layers.** This keeps Bluefin's terminal defaults, image metadata, MOTD tooling, and DX userland intact while still letting `dsb-common` and Dudley apply their opinionated changes.
+**Dudley now inherits Project Bluefin directly instead of reconstructing Bluefin from Silverblue plus partial layers.** This keeps Bluefin's terminal defaults, image metadata, MOTD tooling, and developer userland intact while still letting `dsb-common` and Dudley apply their opinionated changes.
 
 > Be the one who moves, not the one who is moved.
 
 ## What Makes Dudley Different?
 
-Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley is assembled from:
+Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable`). Dudley is assembled from:
 
 ### Shared Organisation Layer (dsb-common)
 - **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
@@ -29,7 +29,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
-- Nvidia build workflow based on `ghcr.io/ublue-os/bluefin-dx-nvidia:latest` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
+- Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
 
 ### Configuration Changes
 - `podman.socket` enabled by default for rootless container workflows
@@ -38,7 +38,7 @@ Here are the changes from the base image (`ghcr.io/ublue-os/bluefin-dx`). Dudley
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
 
-*Last updated: 2026-07-06*
+*Last updated: 2026-07-13*
 
 ---
 
@@ -77,7 +77,7 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
   - `.github/workflows/build-nvidia.yml` runs on pull requests, main pushes, and GitHub Actions `workflow_dispatch`
   - Pull requests build the Nvidia variant without publishing; main/default-branch publishes, signs, and attests it
   - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-latest`, `latest-nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
-  - Uses the upstream Bluefin DX Nvidia `latest` image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
+  - Uses the upstream Project Bluefin Nvidia `stable` image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
 
 ### Dudley Bot Renovate
 
@@ -135,7 +135,7 @@ Note: CI publishing uses keyless signing through GitHub Actions OIDC. No cosign 
 
 Choose your base image in `Containerfile`:
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin-dx:stable@sha256:...
+FROM ghcr.io/projectbluefin/bluefin:stable@sha256:...
 ```
 
 Add your packages in `build/10-build.sh`:
@@ -298,7 +298,7 @@ cosign verify \
 
 ## Architecture
 
-This template now follows a **thin-product Bluefin layering model**. Dudley starts from Bluefin DX directly, then applies DSB shared and Dudley-specific layers during the build.
+This template now follows a **thin-product Bluefin layering model**. Dudley starts from Project Bluefin directly, then applies DSB shared and Dudley-specific layers during the build.
 
 ### Multi-Stage Build Pattern
 
@@ -308,7 +308,7 @@ This template now follows a **thin-product Bluefin layering model**. Dudley star
 - **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
 
 **Stage 2: Base Image** - Default:
-- `ghcr.io/ublue-os/bluefin-dx:stable` (Bluefin GNOME + DX userland)
+- `ghcr.io/projectbluefin/bluefin:stable` (Bluefin GNOME + developer userland)
 
 ### Benefits of This Architecture
 

@@ -26,7 +26,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/^Containerfile$/"],
       "matchStrings": [
-        "ARG BASE_IMAGE_REF=\"(?<depName>ghcr\\.io\\/ublue-os\\/bluefin-dx):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
+        "ARG BASE_IMAGE_REF=\"(?<depName>ghcr\\.io\\/projectbluefin\\/bluefin):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
@@ -35,7 +35,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/^\\.github\\/workflows\\/build-nvidia\\.yml$/"],
       "matchStrings": [
-        "NVIDIA_BASE_IMAGE_REF:\\s*\"(?<depName>ghcr\\.io\\/ublue-os\\/bluefin-dx-nvidia):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
+        "NVIDIA_BASE_IMAGE_REF:\\s*\"(?<depName>ghcr\\.io\\/projectbluefin\\/bluefin-nvidia):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
@@ -45,7 +45,10 @@
   "packageRules": [
     {
       "groupName": "Universal Blue dependencies",
-      "matchPackageNames": ["/^ghcr\\.io\\/ublue-os\\//"]
+      "matchPackageNames": [
+        "/^ghcr\\.io\\/ublue-os\\//",
+        "/^ghcr\\.io\\/projectbluefin\\//"
+      ]
     },
     {
       "groupName": "bootc builder image",
