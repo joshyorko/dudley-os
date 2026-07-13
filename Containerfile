@@ -19,7 +19,7 @@
 # MULTI-STAGE BUILD ARCHITECTURE
 ###############################################################################
 # This Containerfile follows a thin-product layering pattern. Dudley inherits
-# from Bluefin DX directly, then applies DSB shared/product layers on top:
+# from Project Bluefin directly, then applies DSB shared/product layers on top:
 #
 # 1. Context Stage (ctx) - Combines resources from:
 #    - Local build scripts and custom files
@@ -27,12 +27,12 @@
 #    - Dudley product OCI layer
 #
 # 2. Base Image:
-#    - `ghcr.io/ublue-os/bluefin-dx:stable` (Bluefin GNOME + DX userland)
+#    - `ghcr.io/projectbluefin/bluefin:stable` (Bluefin GNOME + developer userland)
 #
 # See: https://docs.projectbluefin.io/contributing/ for architecture diagram
 ###############################################################################
 
-ARG BASE_IMAGE_REF="ghcr.io/ublue-os/bluefin-dx:stable@sha256:ff5a6fb7770239a59be11dd70d86ecfd2d2219873a0b8eb48801abf7bf3385cd"
+ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/bluefin:stable@sha256:a4e485b04df1005fb7e6dbb7c256ec6cf8e1061ddbaaae2163b0b19479c729ab"
 
 # Context stage - combine local and imported OCI container resources
 FROM scratch AS ctx
@@ -43,7 +43,7 @@ COPY custom /custom
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:8f6399c512efbf6645695ed3a37f3c4a0a84fe9f3b880c351eff3464b96d1e71 /system_files/shared /oci/dsb-common/shared
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:8f6399c512efbf6645695ed3a37f3c4a0a84fe9f3b880c351eff3464b96d1e71 /system_files/dudley /oci/dsb-common/dudley
 
-# Base Image - inherit Bluefin DX directly so Bluefin userland, shell, MOTD,
+# Base Image - inherit Project Bluefin directly so Bluefin userland, shell, MOTD,
 # image metadata, and developer tooling stay internally consistent.
 FROM ${BASE_IMAGE_REF}
 
@@ -54,7 +54,7 @@ ARG FINAL_IMAGE_REF="ghcr.io/joshyorko/dudley-os:stable"
 ARG VSCODE_REFRESH_TOKEN="static"
 
 ## Alternative base images (uncomment to use):
-# FROM ghcr.io/ublue-os/bluefin:latest
+# FROM ghcr.io/projectbluefin/bluefin:testing
 # FROM ghcr.io/ublue-os/base-main:latest    
 # FROM quay.io/centos-bootc/centos-bootc:stream10
 

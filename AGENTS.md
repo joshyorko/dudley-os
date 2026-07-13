@@ -13,7 +13,7 @@
 Active Dudley image work is split across two repositories:
 
 - `dsb-common` owns reusable Dudley payload: Brewfiles, Flatpak manifests, wallpapers, shared just recipes, Google Chrome repo definitions, VS Code extension payloads, and shared first-login hooks.
-- `dudley-os` owns final product-image assembly: the Bluefin DX base, layer copy order, final image identity, baked package installs such as Google Chrome, metadata, tests, and local product glue.
+- `dudley-os` owns final product-image assembly: the canonical Project Bluefin base, layer copy order, final image identity, baked package installs such as Google Chrome, metadata, tests, and local product glue.
 
 Treat `dudleys-second-bedroom` as read-only legacy source material. Do not edit, push, reopen, or merge that repository when working on Dudley parity; move any still-needed behavior into `dsb-common` or `dudley-os`.
 
@@ -154,7 +154,7 @@ The CI publish workflow signs with GitHub Actions OIDC keyless cosign signing. D
 ## Core Principles
 
 ### Multi-Stage Build Architecture
-This repository is no longer a generic finpilot template. It is a **thin Dudley product image** built directly on Bluefin DX and layered with `dsb-common`:
+This repository is no longer a generic finpilot template. It is a **thin Dudley product image** built directly on Project Bluefin and layered with `dsb-common`:
 
 **Architecture Layers:**
 1. **Context Stage (ctx)** - Combines resources from multiple sources:
@@ -164,7 +164,7 @@ This repository is no longer a generic finpilot template. It is a **thin Dudley 
    - **dsb-common/dudley** - Dudley-specific shared payload (`/oci/dsb-common/dudley`)
 
 2. **Base Image Options:**
-   - `ghcr.io/ublue-os/bluefin-dx:latest` pinned by digest in `Containerfile`
+   - `ghcr.io/projectbluefin/bluefin:stable` pinned by digest in `Containerfile`
 
 **OCI Container Resources:**
 - `dsb-common` resources are copied to **distinct subdirectories** to avoid file conflicts
@@ -350,12 +350,12 @@ COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-co
 
 **Stage 2: Base Image - Line 52**
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
+FROM ghcr.io/projectbluefin/bluefin:stable@sha256:...
 ```
 
 **Common alternative base images**:
 ```dockerfile
-# This product image is expected to inherit Bluefin DX directly.
+# This product image is expected to inherit Project Bluefin directly.
 # Do not rebuild Bluefin from Silverblue plus partial common layers.
 ```
 
@@ -394,7 +394,7 @@ COPY --from=ghcr.io/joshyorko/dsb-common:latest /system_files/dudley /oci/dsb-co
 
 **Important**: 
 - Do not add new reusable payload directly to `dudley-os`
-- Do not reintroduce `projectbluefin/common` as a separate layer; Bluefin DX is already the inherited base
+- Do not reintroduce `projectbluefin/common` as a separate layer; Project Bluefin is already the inherited base
 - Copy order is `dsb-common/shared`, then `dsb-common/dudley`, then local `dudley-os` product glue
 
 ### 3. Build Scripts (`build/`)
@@ -583,7 +583,7 @@ This stage combines:
 
 **Stage 2: Final Image**
 ```dockerfile
-FROM ghcr.io/ublue-os/bluefin-dx:latest@sha256:...
+FROM ghcr.io/projectbluefin/bluefin:stable@sha256:...
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     /ctx/build/10-build.sh
@@ -957,7 +957,7 @@ podman build --log-level=debug .
 shellcheck build/*.sh
 
 # Test specific script in container
-podman run --rm -it ghcr.io/ublue-os/bluefin:stable bash
+podman run --rm -it ghcr.io/projectbluefin/bluefin:stable bash
 # Then run your script commands manually
 ```
 
@@ -1090,5 +1090,5 @@ Assisted-by: Claude 3.5 Sonnet via GitHub Copilot
 ---
 
 **Last Updated**: 2026-05-26
-**Template lineage**: originally bootstrapped from projectbluefin/finpilot; current product route is Bluefin DX plus dsb-common
+**Template lineage**: originally bootstrapped from projectbluefin/finpilot; current product route is Project Bluefin plus dsb-common
 **Maintainer**: Dudley OS maintainers

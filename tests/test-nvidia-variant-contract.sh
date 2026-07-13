@@ -41,8 +41,8 @@ if ! grep -q 'DEFAULT_TAG: "nvidia-latest"' "${WORKFLOW}"; then
     exit 1
 fi
 
-if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/ublue-os/bluefin-dx-nvidia:latest@sha256:1426cf94439e6794bb4539eb80fff979930c6ae0d4b97457158983ece2ac653f"' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must pin Bluefin DX Nvidia latest base image" >&2
+if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/bluefin-nvidia:stable@sha256:81edb43853fa653b553d16d7fc301ba784a6fe3039ac6dad9caa87ba8d49df9a"' "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow must pin the canonical Project Bluefin Nvidia stable base image" >&2
     exit 1
 fi
 
@@ -54,7 +54,7 @@ fi
 for renovate_needle in \
     '"managerFilePatterns": ["/^\\.github\\/workflows\\/build-nvidia\\.yml$/"]' \
     'NVIDIA_BASE_IMAGE_REF' \
-    'bluefin-dx-nvidia' \
+    'projectbluefin\\/bluefin-nvidia' \
     '"datasourceTemplate": "docker"'; do
     if ! grep -Fq "${renovate_needle}" "${RENOVATE_CONFIG}"; then
         echo "FAIL: Renovate config must track Nvidia base image refs (${renovate_needle})" >&2
@@ -103,4 +103,4 @@ if ! grep -q 'BUILD_ARGS+=("--build-arg" "BASE_IMAGE_REF=${BASE_IMAGE_REF}")' "$
     exit 1
 fi
 
-echo "PASS: Nvidia variant workflow runs on PR/main, tracks latest, is tagged/signed, and is GPU-base aware"
+echo "PASS: Nvidia variant workflow runs on PR/main, tracks stable upstream, is tagged/signed, and is GPU-base aware"
