@@ -4,6 +4,8 @@ set -euo pipefail
 
 # shellcheck source=/dev/null
 source /ctx/build/bootc-accounts.sh
+# shellcheck source=/dev/null
+source /ctx/build/copr-helpers.sh
 
 echo "::group:: Restore Dudley DX runtime"
 
@@ -25,6 +27,7 @@ FEDORA_DX_PACKAGES=(
     flatpak-builder
     git-subtree
     git-svn
+    jetbrains-mono-fonts-all
     libvirt
     libvirt-nss
     nicstat
@@ -79,6 +82,7 @@ cleanup_third_party_repos() {
 trap cleanup_third_party_repos EXIT
 
 dnf5 install -y "${FEDORA_DX_PACKAGES[@]}"
+copr_install_isolated "che/nerd-fonts" nerd-fonts
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then
     dnf5 install -y "${AMD_DX_PACKAGES[@]}"
@@ -103,6 +107,10 @@ dnf5 install -y --enablerepo=code code
 cleanup_third_party_repos
 trap - EXIT
 
+# Project Bluefin's non-DX base does not define the plugdev group expected by
+# inherited U2F and keyboard udev rules.
+getent group plugdev >/dev/null || groupadd --system plugdev
+
 # RPMs installed on top of an already-finalized bootc base add service accounts
 # under /etc. Promote them to the immutable account database so upgrades retain
 # the host's /etc while still resolving qemu, libvirt, Docker, and related users.
@@ -119,6 +127,11 @@ for package in "${FEDORA_DX_PACKAGES[@]}" "${DOCKER_PACKAGES[@]}" code; do
         exit 1
     }
 done
+
+rpm -q nerd-fonts >/dev/null || {
+    echo "Missing Dudley DX package: nerd-fonts" >&2
+    exit 1
+}
 
 for command in docker podman code virt-manager; do
     command -v "${command}" >/dev/null || {
