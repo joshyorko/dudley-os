@@ -27,8 +27,8 @@ FEDORA_DX_PACKAGES=(
     nicstat
     numactl
     osbuild-selinux
-    p7zip
-    p7zip-plugins
+    7zip
+    7zip-standalone
     podman-compose
     podman-machine
     podman-tui

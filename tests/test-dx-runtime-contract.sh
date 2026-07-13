@@ -54,6 +54,18 @@ for package in "${required_packages[@]}"; do
     fi
 done
 
+for package in 7zip 7zip-standalone; do
+    if ! grep -Eq "^[[:space:]]+${package}$" "${INSTALLER}"; then
+        echo "FAIL: Dudley DX installer must use the Fedora archive package ${package}" >&2
+        exit 1
+    fi
+done
+
+if grep -Eq '^[[:space:]]+p7zip(-plugins)?$' "${INSTALLER}"; then
+    echo "FAIL: Dudley DX installer must not validate obsolete p7zip package aliases" >&2
+    exit 1
+fi
+
 # shellcheck disable=SC2016
 for required in \
     'https://download.docker.com/linux/fedora/docker-ce.repo' \
