@@ -173,6 +173,8 @@ This repository is no longer a generic finpilot template. It is a **thin Dudley 
 
 **Rule for agents:** keep reusable Dudley payload in `dsb-common`; keep only final image assembly glue in `dudley-os`.
 
+Project Bluefin does not publish `bluefin-dx` variants. Dudley's established DX runtime contract is therefore final product assembly owned by `build/15-dx.sh`; preserve its Docker, Podman companion, virtualization, group-bootstrap, Bazaar, and Nvidia validation coverage when changing the base image.
+
 ### Build-time vs Runtime
 - **Build-time** (`build/`): Baked into container. Use `dnf5 install`. Services, configs, system packages.
 - **Runtime** (`custom/`): User installs after deployment. Use Brewfiles, Flatpaks. CLI tools, GUI apps, dev environments.

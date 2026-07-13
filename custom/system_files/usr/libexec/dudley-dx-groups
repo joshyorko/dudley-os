@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+state_file="/etc/dudley/dx-groups-v1"
+
+if [[ -f "${state_file}" ]]; then
+    exit 0
+fi
+
+ensure_group() {
+    local group_name=$1
+
+    if getent group "${group_name}" >/dev/null; then
+        return 0
+    fi
+
+    if grep -q "^${group_name}:" /usr/lib/group; then
+        grep "^${group_name}:" /usr/lib/group >>/etc/group
+    else
+        groupadd --system "${group_name}"
+    fi
+}
+
+ensure_group docker
+ensure_group libvirt
+
+groups=(docker libvirt)
+if getent group incus-admin >/dev/null; then
+    groups+=(incus-admin)
+fi
+
+supplementary_groups="$(IFS=,; printf '%s' "${groups[*]}")"
+wheel_members="$(getent group wheel | cut -d: -f4)"
+
+IFS=, read -r -a users <<<"${wheel_members}"
+for user in "${users[@]}"; do
+    [[ -n "${user}" ]] || continue
+    usermod -aG "${supplementary_groups}" "${user}"
+done
+
+install -d "$(dirname "${state_file}")"
+touch "${state_file}"
