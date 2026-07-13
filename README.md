@@ -34,8 +34,8 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 
 ### Configuration Changes
 - `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows
-- Wheel users are enrolled into the Docker and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
-- Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall contract, so GNOME does not see duplicate Bazaar entries and Bazaar remains installed
+- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
+- Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall and D-Bus activation contracts, so GNOME does not see duplicate entries and can launch the Flatpak-backed search provider
 - GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct

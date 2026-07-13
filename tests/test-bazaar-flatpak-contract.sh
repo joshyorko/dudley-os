@@ -6,6 +6,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_SCRIPT="${ROOT_DIR}/build/10-build.sh"
+ACTIVATION_UNIT="${ROOT_DIR}/custom/system_files/usr/lib/systemd/user/io.github.kolunmi.Bazaar.service"
 
 if grep -Eq 'dnf5? +-y +remove +bazaar|dnf5? +remove +-y +bazaar' "${BUILD_SCRIPT}"; then
     echo "FAIL: build must not remove the Bazaar RPM package; it can own the Flatpak preinstall file" >&2
@@ -30,6 +31,21 @@ for required in \
     'IsRuntime=false'; do
     if ! grep -Fq "${required}" "${BUILD_SCRIPT}"; then
         echo "FAIL: build must preserve Bazaar Flatpak preinstall contract (${required})" >&2
+        exit 1
+    fi
+done
+
+if [[ ! -f "${ACTIVATION_UNIT}" ]]; then
+    echo "FAIL: Project Bluefin needs a Bazaar D-Bus activation unit" >&2
+    exit 1
+fi
+
+for required in \
+    'Type=dbus' \
+    'BusName=io.github.kolunmi.Bazaar' \
+    'ExecStart=/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=/app/bin/bazaar io.github.kolunmi.Bazaar service'; do
+    if ! grep -Fq "${required}" "${ACTIVATION_UNIT}"; then
+        echo "FAIL: Bazaar activation unit is missing ${required}" >&2
         exit 1
     fi
 done
