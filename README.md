@@ -4,7 +4,7 @@ A custom bootc operating system image for the DSB organisation, built on the les
 
 This image uses a **thin-product multi-stage build**. Dudley inherits the canonical Project Bluefin base image, then layers in DSB shared configuration plus Dudley-specific payloads on top. See the [Architecture](#architecture) section below for details.
 
-**Dudley now inherits Project Bluefin directly instead of reconstructing Bluefin from Silverblue plus partial layers.** This keeps Bluefin's terminal defaults, image metadata, MOTD tooling, and developer userland intact while still letting `dsb-common` and Dudley apply their opinionated changes.
+**Dudley inherits Project Bluefin directly and restores its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so Dudley explicitly adds the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base.
 
 > Be the one who moves, not the one who is moved.
 
@@ -29,10 +29,12 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
+- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
 - Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
 
 ### Configuration Changes
-- `podman.socket` enabled by default for rootless container workflows
+- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows
+- Wheel users are enrolled into the Docker and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
 - Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall contract, so GNOME does not see duplicate Bazaar entries and Bazaar remains installed
 - GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
@@ -58,7 +60,7 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
 | `build_files/developer/vscode-insiders.sh` | retired | VS Code Insiders is now a Homebrew cask opinion in `dsb-common` and installs through the Dudley dev Brewfile rather than final image assembly |
 | `build_files/user-hooks/10-wallpaper-enforcement.sh` | still owned by `dudley-os` | Preserved as a first-login hook that consumes the shared Dudley wallpaper directory and prefers the shared `dudley-random-wallpaper` runtime when present |
 | `build_files/user-hooks/20-vscode-extensions.sh` | now owned by `dsb-common` | Dudley now relies on the shared hook asset at `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh` and keeps no local duplicate |
-| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic. Google Chrome is the current product-level baked package and is installed here using the shared Dudley repo definition from `dsb-common` |
+| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic. Google Chrome and the Project Bluefin DX compatibility packages are baked here. |
 
 ### Build System
 - Automated builds via GitHub Actions on every commit

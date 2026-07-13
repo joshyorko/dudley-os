@@ -1,0 +1,10 @@
+[Unit]
+Description=Add administrator users to Dudley DX groups
+After=systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/dudley-dx-groups
+
+[Install]
+WantedBy=multi-user.target

@@ -88,6 +88,11 @@ Branch=stable
 IsRuntime=false
 EOF
 
+# Project Bluefin no longer publishes a separate DX image. Restore Dudley's
+# established DX package, service, group, virtualization, and container
+# contract explicitly on top of the canonical Project Bluefin base.
+/ctx/build/15-dx.sh
+
 echo "::endgroup::"
 
 echo "::group:: System Configuration"

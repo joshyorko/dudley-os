@@ -17,6 +17,7 @@ That keeps Dudley opinion/payload in `dsb-common` while leaving only final assem
 ## Included Scripts
 
 - **`10-build.sh`** - Main build script for base system modifications, package installation, and service configuration
+- **`15-dx.sh`** - Restores and validates Dudley's Docker, Podman, virtualization, developer-tooling, Bazaar, and Nvidia DX runtime contract on Project Bluefin
 
 ## Example Scripts
 
