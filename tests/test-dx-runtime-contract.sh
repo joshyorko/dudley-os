@@ -8,6 +8,12 @@ INSTALLER="${ROOT_DIR}/build/15-dx.sh"
 GROUP_HELPER="${ROOT_DIR}/custom/system_files/usr/libexec/dudley-dx-groups"
 GROUP_SERVICE="${ROOT_DIR}/custom/system_files/usr/lib/systemd/system/dudley-dx-groups.service"
 TERMINAL_DEFAULTS="${ROOT_DIR}/custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override"
+FONTCONFIG_DEFAULTS="${ROOT_DIR}/custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf"
+VFIO_DEFAULTS="${ROOT_DIR}/custom/system_files/usr/lib/dracut/dracut.conf.d/80-vfio.conf"
+DOCKER_SYSCTL="${ROOT_DIR}/custom/system_files/usr/lib/sysctl.d/docker-ce.conf"
+LIBVIRT_SERVICE="${ROOT_DIR}/custom/system_files/usr/lib/systemd/system/libvirt-workaround.service"
+LIBVIRT_TMPFILES="${ROOT_DIR}/custom/system_files/usr/lib/tmpfiles.d/libvirt-workaround.conf"
+STALE_MOTD_TEMPLATE="${ROOT_DIR}/custom/system_files/usr/share/ublue-os/motd/template.md"
 
 for required_file in "${INSTALLER}" "${GROUP_HELPER}" "${GROUP_SERVICE}"; do
     if [[ ! -f "${required_file}" ]]; then
@@ -31,21 +37,30 @@ required_packages=(
     bpftrace
     cockpit-machines
     containerd.io
+    dbus-x11
     docker-buildx-plugin
     docker-ce
     docker-ce-cli
     docker-ce-rootless-extras
     docker-compose-plugin
     flatpak-builder
+    genisoimage
+    incus
+    incus-agent
+    incus-selinux
+    iotop-c
     jetbrains-mono-fonts-all
     libvirt
+    lxc
     podman-compose
     podman-machine
     qemu
     qemu-user-static
     rocm-hip
     rocm-opencl
+    util-linux-script
     virt-manager
+    wtype
     code
 )
 
@@ -55,6 +70,33 @@ for package in "${required_packages[@]}"; do
         exit 1
     fi
 done
+
+for required_file in \
+    "${FONTCONFIG_DEFAULTS}" \
+    "${VFIO_DEFAULTS}" \
+    "${DOCKER_SYSCTL}" \
+    "${LIBVIRT_SERVICE}" \
+    "${LIBVIRT_TMPFILES}"; do
+    if [[ ! -f "${required_file}" ]]; then
+        echo "FAIL: missing Dudley DX parity file ${required_file#"${ROOT_DIR}/"}" >&2
+        exit 1
+    fi
+done
+
+for required in \
+    '<family>monospace</family>' \
+    '<family>JetBrains Mono</family>' \
+    '<family>Symbols Nerd Font Mono</family>'; do
+    if ! grep -Fq "${required}" "${FONTCONFIG_DEFAULTS}"; then
+        echo "FAIL: Dudley generic monospace defaults are missing ${required}" >&2
+        exit 1
+    fi
+done
+
+if [[ -e "${STALE_MOTD_TEMPLATE}" ]]; then
+    echo "FAIL: Dudley must inherit Project Bluefin's umotd instead of overriding it" >&2
+    exit 1
+fi
 
 if [[ ! -f "${TERMINAL_DEFAULTS}" ]]; then
     echo "FAIL: missing Dudley terminal defaults" >&2
@@ -98,6 +140,7 @@ for required in \
     'command -v nvidia-ctk' \
     'command -v nvidia-cdi-hook' \
     'command -v nvidia-container-runtime' \
+    'for command in docker podman code incus virt-manager; do' \
     '/etc/systemd/system/nvidia-cdi-refresh.path' \
     '/etc/systemd/system/nvidia-cdi-refresh.service' \
     '/usr/bin/ujust' \
@@ -108,6 +151,17 @@ for required in \
     '/usr/share/flatpak/preinstall.d/bazaar.preinstall'; do
     if ! grep -Fq "${required}" "${INSTALLER}"; then
         echo "FAIL: Dudley DX installer is missing runtime validation: ${required}" >&2
+        exit 1
+    fi
+done
+
+for required in \
+    '/etc/umotd/config.json' \
+    'https://issues.projectbluefin.io/' \
+    'https://ask.projectbluefin.io/' \
+    'https://docs.projectbluefin.io/'; do
+    if ! grep -Fq "${required}" "${INSTALLER}"; then
+        echo "FAIL: Dudley DX installer is missing Bluefin umotd validation: ${required}" >&2
         exit 1
     fi
 done
@@ -128,12 +182,17 @@ for repo_file in docker-ce.repo vscode.repo; do
     fi
 done
 
-for group in docker libvirt; do
+for group in docker incus-admin libvirt; do
     if ! grep -Fq "ensure_group ${group}" "${GROUP_HELPER}"; then
         echo "FAIL: Dudley DX group helper must create ${group}" >&2
         exit 1
     fi
 done
+
+if ! grep -Fq 'state_file="/etc/dudley/dx-groups-v2"' "${GROUP_HELPER}"; then
+    echo "FAIL: the Incus group migration must rerun on existing Dudley systems" >&2
+    exit 1
+fi
 
 # shellcheck disable=SC2016
 if ! grep -Fq 'usermod -aG "${supplementary_groups}" "${user}"' "${GROUP_HELPER}"; then

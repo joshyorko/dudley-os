@@ -23,13 +23,20 @@ FEDORA_DX_PACKAGES=(
     cockpit-selinux
     cockpit-storaged
     cockpit-system
+    dbus-x11
     edk2-ovmf
     flatpak-builder
+    genisoimage
     git-subtree
     git-svn
+    incus
+    incus-agent
+    incus-selinux
+    iotop-c
     jetbrains-mono-fonts-all
     libvirt
     libvirt-nss
+    lxc
     nicstat
     numactl
     osbuild-selinux
@@ -51,9 +58,11 @@ FEDORA_DX_PACKAGES=(
     tiptop
     trace-cmd
     udica
+    util-linux-script
     virt-manager
     virt-v2v
     virt-viewer
+    wtype
     ydotool
 )
 
@@ -119,7 +128,14 @@ promote_bootc_system_accounts /
 systemctl enable docker.socket
 systemctl enable podman.socket
 systemctl enable libvirtd.socket
+systemctl enable libvirt-workaround.service
 systemctl enable dudley-dx-groups.service
+
+fc-cache -f
+fc-match -f '%{family}\n' monospace | grep -Fq 'JetBrains Mono' || {
+    echo "Dudley generic monospace font did not resolve to JetBrains Mono" >&2
+    exit 1
+}
 
 for package in "${FEDORA_DX_PACKAGES[@]}" "${DOCKER_PACKAGES[@]}" code; do
     rpm -q "${package}" >/dev/null || {
@@ -133,7 +149,7 @@ rpm -q nerd-fonts >/dev/null || {
     exit 1
 }
 
-for command in docker podman code virt-manager; do
+for command in docker podman code incus virt-manager; do
     command -v "${command}" >/dev/null || {
         echo "Missing Dudley DX command: ${command}" >&2
         exit 1
@@ -146,9 +162,20 @@ for path in \
     /usr/share/ublue-os/homebrew/cli.Brewfile \
     /usr/lib/systemd/user/bluefin-dynamic-wallpaper.service \
     /usr/lib/systemd/user/io.github.kolunmi.Bazaar.service \
+    /etc/umotd/config.json \
     /usr/share/flatpak/preinstall.d/bazaar.preinstall; do
     test -e "${path}" || {
         echo "Missing Project Bluefin runtime contract: ${path}" >&2
+        exit 1
+    }
+done
+
+for required_link in \
+    https://issues.projectbluefin.io/ \
+    https://ask.projectbluefin.io/ \
+    https://docs.projectbluefin.io/; do
+    grep -Fq "${required_link}" /etc/umotd/config.json || {
+        echo "Missing Project Bluefin umotd link: ${required_link}" >&2
         exit 1
     }
 done
