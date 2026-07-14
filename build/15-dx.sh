@@ -168,6 +168,10 @@ for path in \
     /usr/share/ublue-os/homebrew/cli.Brewfile \
     /usr/lib/systemd/user/bluefin-dynamic-wallpaper.service \
     /usr/lib/systemd/user/io.github.kolunmi.Bazaar.service \
+    /usr/bin/missioncenter-helper \
+    /usr/share/doc/bluefin/bluefin.pdf \
+    /usr/share/gnome-shell/extensions/custom-command-list@storageb.github.com \
+    /etc/dconf/db/distro.d/04-bluefin-custom-command-menu \
     /etc/umotd/config.json \
     /usr/share/flatpak/preinstall.d/bazaar.preinstall; do
     test -e "${path}" || {

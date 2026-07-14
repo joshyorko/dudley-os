@@ -14,10 +14,21 @@ DOCKER_SYSCTL="${ROOT_DIR}/custom/system_files/usr/lib/sysctl.d/docker-ce.conf"
 LIBVIRT_SERVICE="${ROOT_DIR}/custom/system_files/usr/lib/systemd/system/libvirt-workaround.service"
 LIBVIRT_TMPFILES="${ROOT_DIR}/custom/system_files/usr/lib/tmpfiles.d/libvirt-workaround.conf"
 STALE_MOTD_TEMPLATE="${ROOT_DIR}/custom/system_files/usr/share/ublue-os/motd/template.md"
+MISSION_CENTER_HELPER="${ROOT_DIR}/custom/system_files/usr/bin/missioncenter-helper"
 
-for required_file in "${INSTALLER}" "${GROUP_HELPER}" "${GROUP_SERVICE}"; do
+for required_file in "${INSTALLER}" "${GROUP_HELPER}" "${GROUP_SERVICE}" "${MISSION_CENTER_HELPER}"; do
     if [[ ! -f "${required_file}" ]]; then
         echo "FAIL: missing Dudley DX contract file ${required_file#"${ROOT_DIR}/"}" >&2
+        exit 1
+    fi
+done
+
+for required in \
+    'io.missioncenter.MissionCenter' \
+    'flatpak install --system -y' \
+    'flatpak run io.missioncenter.MissionCenter'; do
+    if ! grep -Fq "${required}" "${MISSION_CENTER_HELPER}"; then
+        echo "FAIL: Mission Center helper is missing ${required}" >&2
         exit 1
     fi
 done
@@ -148,6 +159,10 @@ for required in \
     '/usr/share/ublue-os/homebrew/cli.Brewfile' \
     '/usr/lib/systemd/user/bluefin-dynamic-wallpaper.service' \
     '/usr/lib/systemd/user/io.github.kolunmi.Bazaar.service' \
+    '/usr/bin/missioncenter-helper' \
+    '/usr/share/doc/bluefin/bluefin.pdf' \
+    '/usr/share/gnome-shell/extensions/custom-command-list@storageb.github.com' \
+    '/etc/dconf/db/distro.d/04-bluefin-custom-command-menu' \
     '/usr/share/flatpak/preinstall.d/bazaar.preinstall'; do
     if ! grep -Fq "${required}" "${INSTALLER}"; then
         echo "FAIL: Dudley DX installer is missing runtime validation: ${required}" >&2

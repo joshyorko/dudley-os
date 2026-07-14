@@ -29,6 +29,7 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
+- Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
 - Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
 - JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
 - Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
