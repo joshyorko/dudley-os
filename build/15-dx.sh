@@ -23,13 +23,19 @@ FEDORA_DX_PACKAGES=(
     cockpit-selinux
     cockpit-storaged
     cockpit-system
+    container-selinux
+    dbus-x11
     edk2-ovmf
     flatpak-builder
     git-subtree
     git-svn
+    incus
+    incus-agent
+    iotop-c
     jetbrains-mono-fonts-all
     libvirt
     libvirt-nss
+    lxc
     nicstat
     numactl
     osbuild-selinux
@@ -51,10 +57,19 @@ FEDORA_DX_PACKAGES=(
     tiptop
     trace-cmd
     udica
+    util-linux-script
     virt-manager
     virt-v2v
     virt-viewer
+    wtype
     ydotool
+)
+
+# Package providers differ between the standard and Nvidia base repositories.
+# Install the capability and validate the stable command instead of requiring
+# one provider RPM name.
+FEDORA_DX_CAPABILITIES=(
+    genisoimage
 )
 
 DOCKER_PACKAGES=(
@@ -81,7 +96,7 @@ cleanup_third_party_repos() {
 
 trap cleanup_third_party_repos EXIT
 
-dnf5 install -y "${FEDORA_DX_PACKAGES[@]}"
+dnf5 install -y "${FEDORA_DX_PACKAGES[@]}" "${FEDORA_DX_CAPABILITIES[@]}"
 copr_install_isolated "che/nerd-fonts" nerd-fonts
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then
@@ -119,7 +134,14 @@ promote_bootc_system_accounts /
 systemctl enable docker.socket
 systemctl enable podman.socket
 systemctl enable libvirtd.socket
+systemctl enable libvirt-workaround.service
 systemctl enable dudley-dx-groups.service
+
+fc-cache -f
+fc-match -f '%{family}\n' monospace | grep -Fq 'JetBrains Mono' || {
+    echo "Dudley generic monospace font did not resolve to JetBrains Mono" >&2
+    exit 1
+}
 
 for package in "${FEDORA_DX_PACKAGES[@]}" "${DOCKER_PACKAGES[@]}" code; do
     rpm -q "${package}" >/dev/null || {
@@ -133,7 +155,7 @@ rpm -q nerd-fonts >/dev/null || {
     exit 1
 }
 
-for command in docker podman code virt-manager; do
+for command in docker podman code incus mkisofs virt-manager; do
     command -v "${command}" >/dev/null || {
         echo "Missing Dudley DX command: ${command}" >&2
         exit 1
@@ -146,9 +168,24 @@ for path in \
     /usr/share/ublue-os/homebrew/cli.Brewfile \
     /usr/lib/systemd/user/bluefin-dynamic-wallpaper.service \
     /usr/lib/systemd/user/io.github.kolunmi.Bazaar.service \
+    /usr/bin/missioncenter-helper \
+    /usr/share/doc/bluefin/bluefin.pdf \
+    /usr/share/gnome-shell/extensions/custom-command-list@storageb.github.com \
+    /etc/dconf/db/distro.d/04-bluefin-custom-command-menu \
+    /etc/umotd/config.json \
     /usr/share/flatpak/preinstall.d/bazaar.preinstall; do
     test -e "${path}" || {
         echo "Missing Project Bluefin runtime contract: ${path}" >&2
+        exit 1
+    }
+done
+
+for required_link in \
+    https://issues.projectbluefin.io/ \
+    https://ask.projectbluefin.io/ \
+    https://docs.projectbluefin.io/; do
+    grep -Fq "${required_link}" /etc/umotd/config.json || {
+        echo "Missing Project Bluefin umotd link: ${required_link}" >&2
         exit 1
     }
 done

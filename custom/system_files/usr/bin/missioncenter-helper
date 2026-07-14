@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if ! flatpak list --system --columns=application | grep -Fxq 'io.missioncenter.MissionCenter'; then
+    flatpak install --system -y io.missioncenter.MissionCenter
+fi
+
+flatpak run io.missioncenter.MissionCenter "$@"

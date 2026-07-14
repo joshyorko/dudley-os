@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-state_file="/etc/dudley/dx-groups-v1"
+state_file="/etc/dudley/dx-groups-v2"
 
 if [[ -f "${state_file}" ]]; then
     exit 0
@@ -23,12 +23,10 @@ ensure_group() {
 }
 
 ensure_group docker
+ensure_group incus-admin
 ensure_group libvirt
 
-groups=(docker libvirt)
-if getent group incus-admin >/dev/null; then
-    groups+=(incus-admin)
-fi
+groups=(docker incus-admin libvirt)
 
 supplementary_groups="$(IFS=,; printf '%s' "${groups[*]}")"
 wheel_members="$(getent group wheel | cut -d: -f4)"

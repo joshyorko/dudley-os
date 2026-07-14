@@ -29,21 +29,22 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
 - Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
-- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
-- JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults instead of inheriting the smaller Adwaita Mono fallback
+- Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
+- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
+- JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
 - Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
 
 ### Configuration Changes
-- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows
-- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
+- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows; VFIO early loading, Docker IP forwarding, libvirt relabeling, and the current Incus SELinux policy preserve the previous Bluefin DX host contract
+- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker, Incus, and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
 - Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall and D-Bus activation contracts, so GNOME does not see duplicate entries and can launch the Flatpak-backed search provider
 - Bazaar uses its Flatpak-native background mode and a modern curated-page schema compatible with Bazaar 0.9
 - The `plugdev` group is preserved for inherited U2F and keyboard udev rules
 - GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
-- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` so Dudley MOTD/build reporting stays product-correct
+- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` while the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
 
-*Last updated: 2026-07-13*
+*Last updated: 2026-07-14*
 
 ---
 
