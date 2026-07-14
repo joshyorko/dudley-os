@@ -36,6 +36,7 @@ required_packages=(
     android-tools
     bpftrace
     cockpit-machines
+    container-selinux
     containerd.io
     dbus-x11
     docker-buildx-plugin
@@ -47,7 +48,6 @@ required_packages=(
     genisoimage
     incus
     incus-agent
-    incus-selinux
     iotop-c
     jetbrains-mono-fonts-all
     libvirt
@@ -140,7 +140,7 @@ for required in \
     'command -v nvidia-ctk' \
     'command -v nvidia-cdi-hook' \
     'command -v nvidia-container-runtime' \
-    'for command in docker podman code incus virt-manager; do' \
+    'for command in docker podman code incus mkisofs virt-manager; do' \
     '/etc/systemd/system/nvidia-cdi-refresh.path' \
     '/etc/systemd/system/nvidia-cdi-refresh.service' \
     '/usr/bin/ujust' \

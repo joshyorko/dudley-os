@@ -23,15 +23,14 @@ FEDORA_DX_PACKAGES=(
     cockpit-selinux
     cockpit-storaged
     cockpit-system
+    container-selinux
     dbus-x11
     edk2-ovmf
     flatpak-builder
-    genisoimage
     git-subtree
     git-svn
     incus
     incus-agent
-    incus-selinux
     iotop-c
     jetbrains-mono-fonts-all
     libvirt
@@ -66,6 +65,13 @@ FEDORA_DX_PACKAGES=(
     ydotool
 )
 
+# Package providers differ between the standard and Nvidia base repositories.
+# Install the capability and validate the stable command instead of requiring
+# one provider RPM name.
+FEDORA_DX_CAPABILITIES=(
+    genisoimage
+)
+
 DOCKER_PACKAGES=(
     containerd.io
     docker-buildx-plugin
@@ -90,7 +96,7 @@ cleanup_third_party_repos() {
 
 trap cleanup_third_party_repos EXIT
 
-dnf5 install -y "${FEDORA_DX_PACKAGES[@]}"
+dnf5 install -y "${FEDORA_DX_PACKAGES[@]}" "${FEDORA_DX_CAPABILITIES[@]}"
 copr_install_isolated "che/nerd-fonts" nerd-fonts
 
 if ! command -v nvidia-smi >/dev/null 2>&1; then
@@ -149,7 +155,7 @@ rpm -q nerd-fonts >/dev/null || {
     exit 1
 }
 
-for command in docker podman code incus virt-manager; do
+for command in docker podman code incus mkisofs virt-manager; do
     command -v "${command}" >/dev/null || {
         echo "Missing Dudley DX command: ${command}" >&2
         exit 1
