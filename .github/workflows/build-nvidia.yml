@@ -19,7 +19,7 @@ env:
   IMAGE_NAME: "${{ github.event.repository.name }}"
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
   DEFAULT_TAG: "nvidia-latest"
-  NVIDIA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/bluefin-nvidia:stable@sha256:e3a5a31cc8e08d7639e2f787f8474c2fb0a338049db0f6a0c1faa583d9411512"
+  NVIDIA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/bluefin-nvidia:stable@sha256:09c4c0584b73fa15de071ea8a67aed298dfa875f119435ce6b9733f510ab214e"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
