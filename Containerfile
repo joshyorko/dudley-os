@@ -40,6 +40,8 @@ FROM scratch AS ctx
 COPY build /build
 COPY custom /custom
 # Shared DSB organisation layer – product-agnostic configs consumed by all DSB images
+# Keep both imports on the same verified digest. The Wellness Floor publication
+# handoff replaces both refs together after the dsb-common candidate is green.
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:86a8a04466af9c87fc2ae5676488951d70c3007f7c1ed5d4adb596eb5ab9f987 /system_files/shared /oci/dsb-common/shared
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:86a8a04466af9c87fc2ae5676488951d70c3007f7c1ed5d4adb596eb5ab9f987 /system_files/dudley /oci/dsb-common/dudley
 

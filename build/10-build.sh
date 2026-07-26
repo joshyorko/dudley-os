@@ -93,6 +93,10 @@ EOF
 # contract explicitly on top of the canonical Project Bluefin base.
 /ctx/build/15-dx.sh
 
+# Install and validate the image-owned Wellness Floor system requirements after
+# the dsb-common payload and Dudley product policy have been copied into place.
+/ctx/build/16-wellness-floor.sh
+
 echo "::endgroup::"
 
 echo "::group:: System Configuration"

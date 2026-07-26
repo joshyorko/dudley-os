@@ -42,6 +42,7 @@ test-unit:
     bash tests/test-final-metadata.sh
     bash tests/test-nvidia-variant-contract.sh
     bash tests/test-publish-workflow-contract.sh
+    bash tests/test-theme-platform-contract.sh
 
 # Run validation and unit tests
 [group('Test')]

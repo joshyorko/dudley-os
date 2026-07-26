@@ -31,6 +31,7 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - Dudley-only local wallpaper enforcement glue in `custom/system_files/`
 - Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
 - Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
+- Wellness Floor system integration, including the GNOME User Themes extension, manifest compatibility checks, and product enrollment policy
 - JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
 - Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
 
@@ -44,7 +45,31 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
 - Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` while the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
 
-*Last updated: 2026-07-14*
+### Wellness Floor Theme Platform
+
+The image-owned static layer installs the GNOME User Themes extension, selects
+`wellness-floor`, validates that the published manifest supports GNOME on
+Bluefin, and compiles dconf and GLib schemas. Enrollment remains `default-off`
+until the image and VM acceptance gates pass.
+
+The reusable theme catalog, transaction engine, per-user state, and commands
+come from `dsb-common`. They operate only in the current per-user live session:
+
+```bash
+dudley-theme status --json
+dudley-theme set wellness-floor
+dudley-theme off
+
+ujust dudley-theme status
+ujust dudley-theme set wellness-floor
+ujust dudley-theme off
+```
+
+These live commands manage supported GNOME and application preferences. They do
+not promise arbitrary libadwaita recoloring and do not change image-owned static
+boot, login, package, or enrollment policy.
+
+*Last updated: 2026-07-26*
 
 ---
 
