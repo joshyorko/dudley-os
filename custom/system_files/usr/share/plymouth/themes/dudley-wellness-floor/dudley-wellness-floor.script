@@ -1,0 +1,21 @@
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+background_image = Image("background.png");
+background_image = background_image.Scale(screen_width, screen_height);
+background_sprite = Sprite(background_image);
+background_sprite.SetPosition(0, 0, -100);
+
+progress_image = Image.Text("●", 0.82, 0.91, 0.95);
+progress_sprite = Sprite(progress_image);
+progress_x = (screen_width - progress_image.GetWidth()) / 2;
+progress_y = (screen_height - progress_image.GetHeight()) / 2;
+progress_sprite.SetPosition(progress_x, progress_y, 100);
+progress_sprite.SetOpacity(0.35);
+
+fun boot_progress_callback(duration, progress)
+{
+    progress_sprite.SetOpacity(0.35 + (progress * 0.65));
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);

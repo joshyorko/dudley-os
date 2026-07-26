@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Dudley Wellness Floor
+Description=Dudley OS Wellness Floor boot branding
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/dudley-wellness-floor
+ScriptFile=/usr/share/plymouth/themes/dudley-wellness-floor/dudley-wellness-floor.script
