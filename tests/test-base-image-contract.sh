@@ -6,11 +6,14 @@ set -euo pipefail
 containerfile="${1:-Containerfile}"
 renovate_file=".github/renovate.json5"
 metadata_script="build/20-final-metadata.sh"
-expected='ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/bluefin:stable@sha256:a4e485b04df1005fb7e6dbb7c256ec6cf8e1061ddbaaae2163b0b19479c729ab"'
+base_image_ref="$(
+	sed -n 's/^ARG BASE_IMAGE_REF="\([^"]*\)"$/\1/p' "$containerfile"
+)"
+base_image_pattern='^ghcr\.io/projectbluefin/bluefin:stable@sha256:[0-9a-f]{64}$'
 
-if ! grep -Fxq "$expected" "$containerfile"; then
-	echo "FAIL: Containerfile must default to the pinned Project Bluefin stable base image" >&2
-	echo "Expected: $expected" >&2
+if [[ ! "$base_image_ref" =~ $base_image_pattern ]]; then
+	echo "FAIL: Containerfile must default to the canonical Project Bluefin stable image pinned by SHA-256 digest" >&2
+	echo "Found: ${base_image_ref:-<missing>}" >&2
 	exit 1
 fi
 

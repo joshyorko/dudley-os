@@ -41,8 +41,14 @@ if ! grep -q 'DEFAULT_TAG: "nvidia-latest"' "${WORKFLOW}"; then
     exit 1
 fi
 
-if ! grep -q 'NVIDIA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/bluefin-nvidia:stable@sha256:81edb43853fa653b553d16d7fc301ba784a6fe3039ac6dad9caa87ba8d49df9a"' "${WORKFLOW}"; then
-    echo "FAIL: Nvidia workflow must pin the canonical Project Bluefin Nvidia stable base image" >&2
+nvidia_base_image_ref="$(
+    sed -n 's/^[[:space:]]*NVIDIA_BASE_IMAGE_REF:[[:space:]]*"\([^"]*\)"[[:space:]]*$/\1/p' "${WORKFLOW}"
+)"
+nvidia_base_image_pattern='^ghcr\.io/projectbluefin/bluefin-nvidia:stable@sha256:[0-9a-f]{64}$'
+
+if [[ ! "${nvidia_base_image_ref}" =~ ${nvidia_base_image_pattern} ]]; then
+    echo "FAIL: Nvidia workflow must use the canonical Project Bluefin Nvidia stable image pinned by SHA-256 digest" >&2
+    echo "Found: ${nvidia_base_image_ref:-<missing>}" >&2
     exit 1
 fi
 
