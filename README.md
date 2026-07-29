@@ -110,6 +110,7 @@ cosign verify \
 Run the repository checks before opening a pull request:
 
 ```bash
+npm ci
 just test
 npm run test:cards
 npm run cards:check
