@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -105,4 +105,59 @@ test('generated cards are present at the requested dimensions', async () => {
     }
   }
   assert.deepEqual(Object.keys(hashes).sort(), ['dakota', 'nvidia', 'stable']);
+});
+
+test('README is operator-first and credits its upstream foundation', async () => {
+  const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  const headings = readme.match(/^#{1,2} .+$/gm);
+  assert.deepEqual(headings, [
+    '# dudley-os',
+    '## Choose a stream',
+    '## Daily operation',
+    '## What Dudley adds',
+    '## Architecture',
+    '## Build, trust, and release',
+    '## Local verification',
+    '## Repository map',
+    '## Upstream and supporting projects',
+  ]);
+
+  for (const upstreamLink of [
+    'https://projectbluefin.io',
+    'https://docs.projectbluefin.io',
+    'https://github.com/projectbluefin/actions',
+    'https://universal-blue.org',
+    'https://containers.github.io/bootc/',
+  ]) {
+    assert.ok(readme.includes(upstreamLink), `README omits ${upstreamLink}`);
+  }
+
+  for (const required of [
+    'Dakota is experimental.',
+    'still requires boot, update, and rollback qualification',
+    'CI SBOM publication is disabled.',
+    'bootc status',
+    'sudo bootc upgrade',
+    'sudo bootc rollback --apply',
+  ]) {
+    assert.ok(readme.includes(required), `README omits ${required}`);
+  }
+
+  for (const removed of [
+    'Create Your Repository',
+    'Rename the Project',
+    "Love Your Image? Let's Go to Production",
+    'Adding Image Rechunking',
+  ]) {
+    assert.ok(!readme.includes(removed), `README retains stale section: ${removed}`);
+  }
+
+  for (const supportDoc of [
+    'docs/operations.md',
+    'docs/maintenance.md',
+    'docs/history/dudleys-second-bedroom-migration.md',
+  ]) {
+    assert.ok(readme.includes(`](${supportDoc})`), `README omits linked support document: ${supportDoc}`);
+    await access(path.join(root, supportDoc));
+  }
 });
