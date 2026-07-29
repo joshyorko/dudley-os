@@ -2,15 +2,21 @@
 
 A custom bootc operating system image for the DSB organisation, built on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be a **thin product image** that consumes shared configuration from [`dsb-common`](https://github.com/joshyorko/dsb-common) and adds Dudley-specific branding and tooling on top.
 
-This image uses a **thin-product multi-stage build**. Dudley inherits the canonical Project Bluefin base image, then layers in DSB shared configuration plus Dudley-specific payloads on top. See the [Architecture](#architecture) section below for details.
+<p align="center">
+  <a href="static/img/dudley-os-clever-girl-golden-bedroom.png">
+    <img src="static/img/dudley-os-clever-girl-golden-bedroom.png" alt="Dudley OS Clever Girl in the Golden Bedroom" width="800">
+  </a>
+</p>
 
-**Dudley inherits Project Bluefin directly and restores its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so Dudley explicitly adds the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base.
+The Stable and NVIDIA streams use a **thin-product multi-stage build** on canonical Project Bluefin bases, then layer in DSB shared configuration plus Dudley-specific payloads. Dakota is a separate file-only overlay on the upstream Project Bluefin Dakota image. See the [Architecture](#architecture) section below for details.
+
+**Dudley Stable and NVIDIA inherit Project Bluefin directly and restore its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so those streams explicitly add the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base. Experimental Dakota does not claim that Fedora/Chrome/DX parity.
 
 > Be the one who moves, not the one who is moved.
 
 ## What Makes Dudley Different?
 
-Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable`). Dudley is assembled from:
+Stable and NVIDIA customize their respective Project Bluefin bases; Dakota uses the separate upstream Dakota base with a narrower file-only overlay. Dudley is assembled from:
 
 ### Shared Organisation Layer (dsb-common)
 - **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
@@ -32,7 +38,8 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
 - Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
 - JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
-- Nvidia build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable` and published as `ghcr.io/joshyorko/dudley-os:nvidia-latest` plus compatibility tags
+- NVIDIA build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable`; `ghcr.io/joshyorko/dudley-os:nvidia` is the canonical user-facing tag, while the other published NVIDIA tags remain compatibility aliases
+- Experimental Dakota assembly remains a file-only overlay and does not claim Bluefin, Google Chrome, or DX parity
 
 ### Configuration Changes
 - `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows; VFIO early loading, Docker IP forwarding, libvirt relabeling, and the current Incus SELinux policy preserve the previous Bluefin DX host contract
@@ -42,11 +49,52 @@ Here are the changes from the base image (`ghcr.io/projectbluefin/bluefin:stable
 - The `plugdev` group is preserved for inherited U2F and keyboard udev rules
 - GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
 - First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
-- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*` while the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
+- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*`; on Stable and NVIDIA, the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
 
-*Last updated: 2026-07-14*
+*Last updated: 2026-07-29*
 
 ---
+
+## Dudley Streams
+
+### Stable
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/stable-dark.png">
+  <img src="static/img/cards/stable-light.png" alt="Dudley stable release card" width="800">
+</picture>
+
+Stable is the established Bluefin-based fallback for the general Dudley daily-driver experience.
+
+```bash
+sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
+```
+
+### NVIDIA
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/nvidia-dark.png">
+  <img src="static/img/cards/nvidia-light.png" alt="Dudley nvidia release card" width="800">
+</picture>
+
+NVIDIA is the established Bluefin-based fallback for systems that need the Dudley GPU runtime. The canonical switch tag is `:nvidia`; `:nvidia-latest`, `:latest-nvidia`, `:nvidia-stable`, and `:stable-nvidia` remain published as compatibility aliases.
+
+```bash
+sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpolicy
+```
+
+### Dakota
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/dakota-dark.png">
+  <img src="static/img/cards/dakota-light.png" alt="Dudley dakota release card" width="800">
+</picture>
+
+Dakota is the experimental distroless GNOME OS path for daily-driver qualification. Boot, update, and rollback proof is still required before relying on it.
+
+```bash
+sudo bootc switch ghcr.io/joshyorko/dudley-os:dakota --enforce-container-sigpolicy
+```
 
 ## What's Included
 
@@ -72,7 +120,7 @@ The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshy
 - Automatic cleanup of old images (90+ days) to keep it tidy
 - Pull request workflow - test changes before merging to main
   - PRs build and validate before merge
-  - `main` branch builds `:stable` images
+  - `main` branch builds and publishes the Stable, NVIDIA, and Dakota streams
 - Validates your files on pull requests so you never break a build:
   - Justfile, ShellCheck, Renovate config, and final image build checks run here
   - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
@@ -139,7 +187,7 @@ Note: CI publishing uses keyless signing through GitHub Actions OIDC. No cosign 
 
 ### 4. Customize Your Image
 
-Choose your base image in `Containerfile`:
+The Stable stream base is pinned in `Containerfile`; NVIDIA uses its workflow-selected Bluefin NVIDIA base, and Dakota uses `Containerfile.dakota`:
 ```dockerfile
 FROM ghcr.io/projectbluefin/bluefin:stable@sha256:...
 ```
@@ -164,13 +212,13 @@ All changes should be made via pull requests:
    - Brewfile, Flatpak, Justfile, and shellcheck validation
    - Test image build
 4. Once checks pass, merge the PR
-5. Merging triggers publishes a `:stable` image
+5. Merging triggers the Stable, NVIDIA, and Dakota publish workflows
 
 ### 6. Deploy Your Image
 
 Switch to your image:
 ```bash
-sudo bootc switch ghcr.io/joshyorko/dudley-os:stable
+sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
 sudo systemctl reboot
 ```
 
@@ -304,7 +352,7 @@ cosign verify \
 
 ## Architecture
 
-This template now follows a **thin-product Bluefin layering model**. Dudley starts from Project Bluefin directly, then applies DSB shared and Dudley-specific layers during the build.
+Stable and NVIDIA follow a **thin-product Bluefin layering model** and restore Dudley's established DX contract. Dakota follows a separate file-only layering model on the upstream Project Bluefin Dakota image and does not claim Fedora/Chrome/DX parity.
 
 ### Multi-Stage Build Pattern
 
@@ -313,8 +361,10 @@ This template now follows a **thin-product Bluefin layering model**. Dudley star
 - Local custom files (`/custom`)
 - **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
 
-**Stage 2: Base Image** - Default:
-- `ghcr.io/projectbluefin/bluefin:stable` (Bluefin GNOME + developer userland)
+**Stage 2: Stream base image**:
+- Stable: `ghcr.io/projectbluefin/bluefin:stable` (Bluefin GNOME + Dudley DX product layer)
+- NVIDIA: `ghcr.io/projectbluefin/bluefin-nvidia:stable` (Bluefin NVIDIA + Dudley DX product layer)
+- Dakota: `ghcr.io/projectbluefin/dakota:stable` (experimental distroless GNOME OS + file-only Dudley overlay)
 
 ### Benefits of This Architecture
 
@@ -349,20 +399,20 @@ VS Code Insiders is installed at runtime through the Dudley dev Brewfile from `d
 
 ## Image Publishing
 
-Images are automatically built and pushed to the GitHub Container Registry on every push to `main`:
+The Stable, NVIDIA, and Dakota images are automatically built and pushed to the GitHub Container Registry on every push to `main`. Canonical user-facing tags are:
 
 ```
 ghcr.io/joshyorko/dudley-os:stable
-ghcr.io/joshyorko/dudley-os:stable.YYYYMMDD
-ghcr.io/joshyorko/dudley-os:YYYYMMDD
+ghcr.io/joshyorko/dudley-os:nvidia
+ghcr.io/joshyorko/dudley-os:dakota
 ```
 
-Pull requests build a test image tagged `:pr-<number>` but **do not** push to the registry.
+Stable and NVIDIA retain their existing dated and compatibility aliases, including the NVIDIA aliases listed above. Pull requests build test images but **do not** push to the registry.
 
 To deploy on a running bootc system:
 
 ```bash
-sudo bootc switch ghcr.io/joshyorko/dudley-os:stable
+sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
 sudo systemctl reboot
 ```
 

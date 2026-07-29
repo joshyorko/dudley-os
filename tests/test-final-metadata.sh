@@ -99,6 +99,15 @@ assert_json '."image-tag"' "stable"
 assert_json '."image-flavor"' "main"
 assert_json '."base-image-name"' "silverblue"
 assert_json '."base-image-ref"' "ghcr.io/projectbluefin/bluefin:stable@sha256:abc123"
+assert_json '.stream' "stable"
+assert_json '."base-distribution"' "bluefin"
+
+metadata_keys="$(jq -r 'keys_unsorted | join(",")' "$IMAGE_INFO_PATH")"
+expected_metadata_keys='image-flavor,base-image-name,fedora-version,image-name,image-vendor,image-ref,image-tag,base-image-ref,stream,base-distribution'
+if [[ "$metadata_keys" != "$expected_metadata_keys" ]]; then
+	echo "FAIL: Bluefin metadata key order changed: $metadata_keys" >&2
+	exit 1
+fi
 
 if ! grep -q '^VARIANT_ID="bluefin"$' "$OS_RELEASE_FILE"; then
 	echo "FAIL: os-release VARIANT_ID did not preserve inherited base variant" >&2
@@ -136,5 +145,46 @@ fi
 jq -e --arg path "$CODE_SETTINGS" '.hooks["vscode-extensions"].dependencies | index($path)' "$MANIFEST_PATH" >/dev/null
 jq -e --arg path "$CODE_INSIDERS_SETTINGS" '.hooks["vscode-extensions"].dependencies | index($path)' "$MANIFEST_PATH" >/dev/null
 jq -e '.hooks["vscode-extensions"].metadata.extension_count == 2' "$MANIFEST_PATH" >/dev/null
+
+DAKOTA_DIR="$(mktemp -d)"
+trap 'rm -rf "$TEST_DIR" "$DAKOTA_DIR"' EXIT
+DAKOTA_MANIFEST_PATH="$DAKOTA_DIR/etc/dudley/build-manifest.json"
+DAKOTA_IMAGE_INFO_PATH="$DAKOTA_DIR/usr/share/ublue-os/image-info.json"
+DAKOTA_OS_RELEASE_FILE="$DAKOTA_DIR/usr/lib/os-release"
+mkdir -p "$(dirname "$DAKOTA_MANIFEST_PATH")" "$(dirname "$DAKOTA_IMAGE_INFO_PATH")" "$(dirname "$DAKOTA_OS_RELEASE_FILE")"
+
+cat >"$DAKOTA_IMAGE_INFO_PATH" <<'JSON'
+{
+  "image-flavor": "main",
+  "base-image-name": "dakota",
+  "fedora-version": "44"
+}
+JSON
+
+cat >"$DAKOTA_OS_RELEASE_FILE" <<'EOF'
+ID=dakota
+ID_LIKE="gnomeos"
+VERSION_ID=46
+VARIANT_ID=dakota
+NAME="Dakota"
+PRETTY_NAME="Dakota"
+EOF
+
+DUDLEY_STREAM=dakota \
+	BASE_DISTRIBUTION=dakota \
+	FINAL_IMAGE_REF=ghcr.io/joshyorko/dudley-os:dakota \
+	BASE_IMAGE_REF=ghcr.io/projectbluefin/dakota:stable@sha256:abc123 \
+	MANIFEST_PATH="$DAKOTA_MANIFEST_PATH" \
+	IMAGE_INFO_PATH="$DAKOTA_IMAGE_INFO_PATH" \
+	OS_RELEASE_FILE="$DAKOTA_OS_RELEASE_FILE" \
+	WALLPAPER_HOOK="$DAKOTA_DIR/missing-wallpaper-hook" \
+	VSCODE_HOOK="$DAKOTA_DIR/missing-vscode-hook" \
+	DUDLEY_BUILD_INFO_CMD=/usr/bin/true \
+	bash build/20-final-metadata.sh
+
+for expected in 'ID=dakota' 'ID_LIKE="gnomeos"' 'VERSION_ID=46' 'VARIANT_ID="dakota"'; do
+	grep -Fxq "$expected" "$DAKOTA_OS_RELEASE_FILE" || { echo "FAIL: Dakota inherited os-release value changed: $expected" >&2; exit 1; }
+done
+jq -e '."image-name" == "dudley-os" and ."image-tag" == "dakota" and ."image-flavor" == "dakota" and .stream == "dakota" and ."base-distribution" == "dakota" and ."base-image-ref" == "ghcr.io/projectbluefin/dakota:stable@sha256:abc123" and has("fedora-version") | not' "$DAKOTA_IMAGE_INFO_PATH" >/dev/null
 
 echo "PASS: Dudley final metadata preserves Project Bluefin runtime contracts"
