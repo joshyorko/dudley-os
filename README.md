@@ -1,6 +1,6 @@
 # dudley-os
 
-A custom bootc operating system image for the DSB organisation, built on the lessons from [Universal Blue](https://universal-blue.org/) and [Bluefin](https://projectbluefin.io). It is designed to be a **thin product image** that consumes shared configuration from [`dsb-common`](https://github.com/joshyorko/dsb-common) and adds Dudley-specific branding and tooling on top.
+Dudley is Josh's personal [Project Bluefin](https://projectbluefin.io) variant: a bootc operating-system image that keeps Bluefin's desktop and userland contract while adding Dudley-specific defaults, tools, and release streams.
 
 <p align="center">
   <a href="static/img/dudley-os-clever-girl-golden-bedroom.png">
@@ -8,499 +8,144 @@ A custom bootc operating system image for the DSB organisation, built on the les
   </a>
 </p>
 
-*Last updated: 2026-07-29*
+> **Upstream foundation:** Dudley is built on [Project Bluefin](https://projectbluefin.io) and its [documentation](https://docs.projectbluefin.io), published with [Project Bluefin Actions](https://github.com/projectbluefin/actions), and grounded in the [Universal Blue](https://universal-blue.org) and [bootc](https://containers.github.io/bootc/) ecosystems.
 
----
+## Choose a stream
 
-## Dudley Streams
-
-### Stable
+Stable is the general daily-driver stream.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/stable-dark.png">
   <img src="static/img/cards/stable-light.png" alt="Dudley stable release card" width="800">
 </picture>
 
-Stable is the established Bluefin-based fallback for the general Dudley daily-driver experience.
-
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
 ```
 
-### NVIDIA
+NVIDIA is the daily-driver stream for systems that need Project Bluefin's NVIDIA runtime.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/nvidia-dark.png">
   <img src="static/img/cards/nvidia-light.png" alt="Dudley nvidia release card" width="800">
 </picture>
 
-NVIDIA is the established Bluefin-based fallback for systems that need the Dudley GPU runtime. The canonical switch tag is `:nvidia`; `:nvidia-latest`, `:latest-nvidia`, `:nvidia-stable`, and `:stable-nvidia` remain published as compatibility aliases.
-
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpolicy
 ```
 
-### Dakota
+Dakota is experimental. It is a narrow file-only overlay and still requires boot, update, and rollback qualification before daily-driver use.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/dakota-dark.png">
   <img src="static/img/cards/dakota-light.png" alt="Dudley dakota release card" width="800">
 </picture>
 
-Dakota is the experimental distroless GNOME OS path for daily-driver qualification. Boot, update, and rollback proof is still required before relying on it.
-
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:dakota --enforce-container-sigpolicy
 ```
 
-The Stable and NVIDIA streams use a **thin-product multi-stage build** on canonical Project Bluefin bases, then layer in DSB shared configuration plus Dudley-specific payloads. Dakota is a separate file-only overlay on the upstream Project Bluefin Dakota image. See the [Architecture](#architecture) section below for details.
+## Daily operation
 
-**Dudley Stable and NVIDIA inherit Project Bluefin directly and restore its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so those streams explicitly add the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base. Experimental Dakota does not claim that Fedora/Chrome/DX parity.
+Inspect the active deployment, stage an update, and reboot into it:
 
-> Be the one who moves, not the one who is moved.
-
-## What Makes Dudley Different?
-
-Stable and NVIDIA customize their respective Project Bluefin bases; Dakota uses the separate upstream Dakota base with a narrower file-only overlay. Dudley is assembled from:
-
-### Shared Organisation Layer (dsb-common)
-- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
-  - `/system_files/shared`
-  - `/system_files/dudley`
-- Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
-- Dudley's Google Chrome RPM repository definition now comes from `dsb-common` at `/system_files/dudley/etc/yum.repos.d/google-chrome.repo`.
-- Dudley VS Code Insiders assets now come from `dsb-common`, including:
-  - `/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
-  - `/usr/share/ublue-os/vscode-extensions.list`
-  - `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh`
-
-### Product-specific Additions (this repo)
-- Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
-- Google Chrome is baked into the final image from the shared Dudley RPM repository definition in `dsb-common`; final assembly disables the repo after install so Chrome updates remain image-build controlled
-- Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
-- Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
-- Dudley-only local wallpaper enforcement glue in `custom/system_files/`
-- Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
-- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
-- JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
-- NVIDIA build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable`; `ghcr.io/joshyorko/dudley-os:nvidia` is the canonical user-facing tag, while the other published NVIDIA tags remain compatibility aliases
-- Experimental Dakota assembly remains a file-only overlay and does not claim Bluefin, Google Chrome, or DX parity
-
-### Configuration Changes
-- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows; VFIO early loading, Docker IP forwarding, libvirt relabeling, and the current Incus SELinux policy preserve the previous Bluefin DX host contract
-- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker, Incus, and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
-- Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall and D-Bus activation contracts, so GNOME does not see duplicate entries and can launch the Flatpak-backed search provider
-- Bazaar uses its Flatpak-native background mode and a modern curated-page schema compatible with Bazaar 0.9
-- The `plugdev` group is preserved for inherited U2F and keyboard udev rules
-- GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
-- First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
-- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*`; on Stable and NVIDIA, the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
-
-
-
-## What's Included
-
-### Dudley migration checklist
-
-The migration from [`joshyorko/dudleys-second-bedroom`](https://github.com/joshyorko/dudleys-second-bedroom/tree/main) was explicitly audited so Dudley behavior is either preserved here, moved into `dsb-common`, or intentionally retired:
-
-| Legacy area | Status | Dudley-os outcome |
-| --- | --- | --- |
-| `custom_wallpapers/` | now owned by `dsb-common` | Dudley wallpapers are consumed from `/system_files/dudley/usr/share/backgrounds/dudley`; no local wallpaper assets are kept here |
-| `system_files/` shared defaults, Dudley opinion payloads, and runtime wallpaper randomizer files | now owned by `dsb-common` | Shared defaults plus Dudley data payloads are consumed from the shared OCI layer before local product glue |
-| `brew/` (`dudley-cli`, `dudley-dev`, `dudley-fonts`, `dudley-k8s`) | now owned by `dsb-common` | Dudley Homebrew manifests are consumed from `dsb-common/dudley/usr/share/ublue-os/homebrew/` rather than local `custom/brew/` data |
-| `flatpaks/` | now owned by `dsb-common` | Dudley Flatpak declarative payload is consumed from `dsb-common/dudley/etc/flatpak/preinstall.d/` rather than local `custom/flatpaks/` data |
-| `vscode-extensions.list` | now owned by `dsb-common` | Dudley extension payload is consumed from `dsb-common/dudley/usr/share/ublue-os/vscode-extensions.list` |
-| `build_files/developer/vscode-insiders.sh` | retired | VS Code Insiders is now a Homebrew cask opinion in `dsb-common` and installs through the Dudley dev Brewfile rather than final image assembly |
-| `build_files/user-hooks/10-wallpaper-enforcement.sh` | still owned by `dudley-os` | Preserved as a first-login hook that consumes the shared Dudley wallpaper directory and prefers the shared `dudley-random-wallpaper` runtime when present |
-| `build_files/user-hooks/20-vscode-extensions.sh` | now owned by `dsb-common` | Dudley now relies on the shared hook asset at `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh` and keeps no local duplicate |
-| Product-specific package/config logic in `Containerfile`, `Justfile`, `packages.json`, and `build_files/` | mixed | Dudley opinion/data moved to `dsb-common`; final assembly/build glue remains in this repo; the monolithic `packages.json` manifest is intentionally dropped in favor of thin-repo assembly logic. Google Chrome and the Project Bluefin DX compatibility packages are baked here. |
-
-### Build System
-- Automated builds via GitHub Actions on every commit
-- Dudley Bot self-hosted Renovate runs from GitHub Actions to keep images and actions current
-- Automatic cleanup of old images (90+ days) to keep it tidy
-- Pull request workflow - test changes before merging to main
-  - PRs build and validate before merge
-  - `main` branch builds and publishes the Stable, NVIDIA, and Dakota streams
-- Validates your files on pull requests so you never break a build:
-  - Justfile, ShellCheck, Renovate config, and final image build checks run here
-  - Brewfile and Flatpak payload validation runs in `dsb-common`, where that payload now lives
-- Production Grade Features
-  - Keyless container signing and GitHub provenance attestations run on `main` publishes
-  - CI SBOM publishing is disabled to keep personal image builds fast
-- GPU Variant
-  - `.github/workflows/build-nvidia.yml` runs on pull requests, main pushes, and GitHub Actions `workflow_dispatch`
-  - Pull requests build the Nvidia variant without publishing; main/default-branch publishes, signs, and attests it
-  - Publishes Nvidia builds to GHCR with `nvidia`, `nvidia-latest`, `latest-nvidia`, `nvidia-stable`, `stable-nvidia`, and dated Nvidia tags
-  - Uses the upstream Project Bluefin Nvidia `stable` image as the base so Nvidia kernel/akmods support stays aligned with Bluefin
-
-### Dudley Bot Renovate
-
-Dependency updates are handled by the central `joshyorko/renovate-config` runner. Repo-specific matching and grouping lives in `.github/renovate.json5`; do not add a repo-local Renovate workflow unless the runner model changes again. The central bot token must be able to read Dependabot/vulnerability alerts and write workflow files so Renovate can update `.github/workflows/**`.
-
-### Homebrew Integration
-- Dudley’s shipped Brewfiles are expected from the `dsb-common` Dudley layer at `/usr/share/ublue-os/homebrew/`
-- Includes curated collections: CLI utilities, development tools, IDE/editor tools, fonts, Kubernetes tools, and opt-in AI/agent tools. Go nuts.
-- Users install packages at runtime with `brew bundle`, aliased to premade `ujust commands`
-- See [custom/brew/README.md](custom/brew/README.md) for details
-
-### Flatpak Support
-- Dudley’s shipped Flatpak declarative payload is expected from the `dsb-common` Dudley layer at `/etc/flatpak/preinstall.d/`
-- Automatically installed on first boot after user setup
-- See [custom/flatpaks/README.md](custom/flatpaks/README.md) for details
-
-### ujust Commands
-- User-friendly command shortcuts via `ujust`
-- Pre-configured examples for app installation and system maintenance for you to customize
-- See [custom/ujust/README.md](custom/ujust/README.md) for details
-
-### Build Scripts
-- Modular numbered scripts (10-, 20-, 30-) run in order
-- Example scripts included for third-party repositories and desktop replacement
-- Helper functions for safe COPR usage
-- See [build/README.md](build/README.md) for details
-
-## Quick Start
-
-### 1. Create Your Repository
-
-Click "Use this template" to create a new repository from this template.
-
-### 2. Rename the Project
-
-The project name `dudley-os` is already set in all required files. If you fork this for a different product, change it in these 6 files:
-
-1. `Containerfile` (line 4): `# Name: your-repo-name`
-2. `Justfile` (line 1): `export image_name := env("IMAGE_NAME", "your-repo-name")`
-3. `README.md` (line 1): `# your-repo-name`
-4. `artifacthub-repo.yml` (line 5): `repositoryID: your-repo-name`
-5. `custom/ujust/README.md` (~line 175): `localhost/your-repo-name:stable`
-6. `.github/workflows/clean.yml`: `packages: your-repo-name`
-
-### 3. Enable GitHub Actions
-
-- Go to the "Actions" tab in your repository
-- Click "I understand my workflows, go ahead and enable them"
-
-Your first build will start automatically! 
-
-Note: CI publishing uses keyless signing through GitHub Actions OIDC. No cosign private key is needed for the main publish workflow.
-
-### 4. Customize Your Image
-
-The Stable stream base is pinned in `Containerfile`; NVIDIA uses its workflow-selected Bluefin NVIDIA base, and Dakota uses `Containerfile.dakota`:
-```dockerfile
-FROM ghcr.io/projectbluefin/bluefin:stable@sha256:...
-```
-
-Add your packages in `build/10-build.sh`:
 ```bash
-dnf5 install -y package-name
-```
-
-Customize your apps:
-- Update Dudley Brewfiles in `dsb-common` under `system_files/dudley/usr/share/ublue-os/homebrew/` ([local guide](custom/brew/README.md))
-- Update Dudley Flatpaks in `dsb-common` under `system_files/dudley/etc/flatpak/preinstall.d/` ([local guide](custom/flatpaks/README.md))
-- Add ujust commands in `custom/ujust/` ([guide](custom/ujust/README.md))
-
-### 5. Development Workflow
-
-All changes should be made via pull requests:
-
-1. Open a pull request on GitHub with the change you want.
-3. The PR will automatically trigger:
-   - Build validation
-   - Brewfile, Flatpak, Justfile, and shellcheck validation
-   - Test image build
-4. Once checks pass, merge the PR
-5. Merging triggers the Stable, NVIDIA, and Dakota publish workflows
-
-### 6. Deploy Your Image
-
-Switch to your image:
-```bash
-sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
+bootc status
+sudo bootc upgrade
 sudo systemctl reboot
 ```
 
-## Image Signing and Provenance
-
-Main-branch CI publishes use keyless cosign signing through GitHub Actions OIDC and push GitHub provenance attestations. SBOM generation is disabled in this personal image workflow to avoid spending hosted runner time rescanning a bootc image whose base layers already come from Universal Blue.
-
-### Why Sign Images?
-
-- Verify image authenticity and integrity
-- Prevent tampering and supply chain attacks
-- Required for some enterprise/security-focused deployments
-- Industry best practice for production images
-
-### Verification
-
-Users can verify the published image with the repository's GitHub Actions OIDC identity:
+If the new deployment is unsuitable, apply the previous deployment:
 
 ```bash
-cosign verify \
-  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  ghcr.io/joshyorko/dudley-os:stable
+sudo bootc rollback --apply
 ```
 
-The repo-local Dagger release path can still use key-based signing for ad hoc registries when `--signing-key` is provided.
+See the [operator runbook](docs/operations.md) for stream switching, VM workflows, and image verification. Project Bluefin's [documentation](https://docs.projectbluefin.io) is the source for inherited upstream behavior.
 
-## Love Your Image? Let's Go to Production
+## What Dudley adds
 
-Ready to take your custom OS to production? Keep these gates healthy for security, reliability, and performance:
+Stable and NVIDIA add the Dudley product layer while retaining their Project Bluefin bases:
 
-### Production Checklist
+- shared DSB defaults and Dudley payload from `dsb-common`
+- Dudley wallpapers, runtime Brewfiles, Flatpak declarations, VS Code payload, hooks, and recipes
+- DX-style container, virtualization, and developer runtime additions
+- Google Chrome installed into the image
+- Dudley identity, metadata, validation, publishing, and local product glue
 
-- [x] **Enable Image Signing**
-  - Provides cryptographic verification of your images
-  - Prevents tampering and ensures authenticity
-  - Status: **Enabled for main publishes** through keyless GitHub Actions OIDC signing
-
-- [x] **Enable Build Provenance**
-  - Publishes GitHub build provenance attestations for the pushed image
-  - Provides transparency about how the image was built
-  - Status: **Enabled for main publishes** through `projectbluefin/actions/bootc-build/sign-and-publish`
-
-- [ ] **Enable CI SBOM Publishing**
-  - Generates Software Bill of Materials for supply chain security
-  - Status: **Disabled intentionally** to keep personal image builds fast
-
-- [ ] **Enable Image Rechunking** (Recommended)
-  - Optimizes bootc image layers for better update performance
-  - Reduces update sizes by 5-10x
-  - Improves download resumability with evenly sized layers
-  - To enable:
-    1. Edit `.github/workflows/build.yml`
-    2. Find the "Build Image" step
-    3. Add a rechunk step after the build (see example below)
-  - Status: **Not enabled by default** (optional optimization)
-
-#### Adding Image Rechunking
-
-After building your bootc image, add a rechunk step before pushing to the registry. Here's an example based on the workflow used by [zirconium-dev/zirconium](https://github.com/zirconium-dev/zirconium):
-
-```yaml
-- name: Build image
-  id: build
-  run: sudo podman build -t "${IMAGE_NAME}:${DEFAULT_TAG}" -f ./Containerfile .
-
-- name: Rechunk Image
-  run: |
-    sudo podman run --rm --privileged \
-      -v /var/lib/containers:/var/lib/containers \
-      --entrypoint /usr/libexec/bootc-base-imagectl \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
-      rechunk --max-layers 96 \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}"
-
-- name: Push to Registry
-  run: sudo podman push "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" "${IMAGE_REGISTRY}/${IMAGE_NAME}:${DEFAULT_TAG}"
-```
-
-Alternative approach using a temporary tag for clarity:
-
-```yaml
-- name: Rechunk Image
-  run: |
-    sudo podman run --rm --privileged \
-      -v /var/lib/containers:/var/lib/containers \
-      --entrypoint /usr/libexec/bootc-base-imagectl \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
-      rechunk --max-layers 67 \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}" \
-      "localhost/${IMAGE_NAME}:${DEFAULT_TAG}-rechunked"
-    
-    # Tag the rechunked image with the original tag
-    sudo podman tag "localhost/${IMAGE_NAME}:${DEFAULT_TAG}-rechunked" "localhost/${IMAGE_NAME}:${DEFAULT_TAG}"
-    sudo podman rmi "localhost/${IMAGE_NAME}:${DEFAULT_TAG}-rechunked"
-```
-
-**Parameters:**
-- `--max-layers`: Maximum number of layers for the rechunked image (typically 67 for optimal balance)
-- The first image reference is the source (input)
-- The second image reference is the destination (output)
-  - When using the same reference for both, the image is rechunked in-place
-  - You can also use different tags (e.g., `-rechunked` suffix) and then retag if preferred
-
-**References:**
-- [CoreOS rpm-ostree build-chunked-oci documentation](https://coreos.github.io/rpm-ostree/build-chunked-oci/)
-- [bootc documentation](https://containers.github.io/bootc/)
-
-### Production Publish Features
-
-Your workflow will:
-- Sign published images keylessly with cosign
-- Generate and attach SBOMs
-- Publish GitHub provenance attestations
-
-Users can verify your images with:
-```bash
-cosign verify \
-  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  ghcr.io/joshyorko/dudley-os:stable
-```
-
-## Detailed Guides
-
-- [Homebrew/Brewfiles](custom/brew/README.md) - Runtime package management
-- [Flatpak Preinstall](custom/flatpaks/README.md) - GUI application setup
-- [ujust Commands](custom/ujust/README.md) - User convenience commands
-- [Build Scripts](build/README.md) - Build-time customization
+Dakota deliberately carries less. It uses an allowlisted file overlay and excludes Fedora/RPM/DNF, Chrome RPM, Docker, and libvirt host payload.
 
 ## Architecture
 
-Stable and NVIDIA follow a **thin-product Bluefin layering model** and restore Dudley's established DX contract. Dakota follows a separate file-only layering model on the upstream Project Bluefin Dakota image and does not claim Fedora/Chrome/DX parity.
+| Layer | Responsibility |
+| --- | --- |
+| Project Bluefin | Base images, desktop and userland contract, bootc integration, and shared build/publish actions |
+| `dsb-common` | Shared DSB defaults plus Dudley wallpapers, Brewfiles, Flatpak declarations, VS Code payload, hooks, and recipes |
+| `dudley-os` | Stream assembly, DX-style runtime additions, Chrome image install, final metadata, validation, publishing, and local product glue |
 
-### Multi-Stage Build Pattern
+Stable and NVIDIA are assembled in this order:
 
-**Stage 1: Context (ctx)** - Combines resources from multiple sources:
-- Local build scripts (`/build`)
-- Local custom files (`/custom`)
-- **dsb-common** (`ghcr.io/joshyorko/dsb-common:latest`) - Shared DSB organisation layer
+1. Project Bluefin stream base
+2. `dsb-common/shared`
+3. `dsb-common/dudley`
+4. local `dudley-os` assembly
 
-**Stage 2: Stream base image**:
-- Stable: `ghcr.io/projectbluefin/bluefin:stable` (Bluefin GNOME + Dudley DX product layer)
-- NVIDIA: `ghcr.io/projectbluefin/bluefin-nvidia:stable` (Bluefin NVIDIA + Dudley DX product layer)
-- Dakota: `ghcr.io/projectbluefin/dakota:stable` (experimental distroless GNOME OS + file-only Dudley overlay)
+Dakota uses the same ownership boundaries but applies only its allowlisted file overlay to the Project Bluefin Dakota base. Detailed change-placement and stream-input guidance lives in [Maintenance and ownership](docs/maintenance.md).
 
-### Benefits of This Architecture
+## Build, trust, and release
 
-- **Modularity**: Compose your image from reusable OCI containers
-- **Maintainability**: Update shared components independently
-- **Reproducibility**: Renovate automatically updates OCI tags to SHA digests
-- **Consistency**: Keep Bluefin's shipped userland intact instead of partially rebuilding it
-- **Thin product images**: Common organisation config lives in `dsb-common`; product repos only contain what's unique
+Renovate pins image and action dependencies by digest. Project Bluefin Actions handles runner setup, preflight, image push, keyless signing, and GitHub provenance. Pushes to `main` publish Stable, NVIDIA, and Dakota. CI SBOM publication is disabled.
 
-### OCI Container Resources
-
-The Containerfile imports files from these OCI containers at build time:
-
-```dockerfile
-COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/shared /oci/dsb-common/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest  /system_files/dudley /oci/dsb-common/dudley
-```
-
-Your build scripts can access these files at:
-- `/ctx/oci/dsb-common/shared/` - DSB organisation-wide shared files
-- `/ctx/oci/dsb-common/dudley/` - Dudley-specific shared-layer content
-- `/ctx/custom/system_files/` - Dudley product-only files that stay in this repo
-
-The build order in `build/10-build.sh` is:
-1. **dsb-common/shared** (organisation-wide baseline)
-2. **dsb-common/dudley** (Dudley shared-layer content such as wallpapers)
-3. **Local dudley-os product files** (this repo – remaining local wallpaper glue and final assembly wiring)
-
-**Note**: Renovate automatically updates `:latest` tags to SHA digests for reproducible builds.
-
-VS Code Insiders is installed at runtime through the Dudley dev Brewfile from `dsb-common`; final image assembly no longer downloads or installs the editor RPM.
-
-## Image Publishing
-
-The Stable, NVIDIA, and Dakota images are automatically built and pushed to the GitHub Container Registry on every push to `main`. Canonical user-facing tags are:
-
-```
-ghcr.io/joshyorko/dudley-os:stable
-ghcr.io/joshyorko/dudley-os:nvidia
-ghcr.io/joshyorko/dudley-os:dakota
-```
-
-Stable and NVIDIA retain their existing dated and compatibility aliases, including the NVIDIA aliases listed above. Pull requests build test images but **do not** push to the registry.
-
-To deploy on a running bootc system:
+Verify the published Stable image against this repository's GitHub Actions OIDC identity:
 
 ```bash
-sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
-sudo systemctl reboot
+cosign verify \
+  --certificate-identity-regexp "https://github.com/joshyorko/dudley-os/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  ghcr.io/joshyorko/dudley-os:stable
 ```
 
-## Local Testing
+## Local verification
 
-Test your changes before pushing:
+Run the repository checks before opening a pull request:
 
 ```bash
-just build              # Build container image locally
-just build-qcow2        # Build QCOW2 VM disk image
-just run-vm-qcow2       # Launch image in a browser-based VM
+just test
+npm run test:cards
+npm run cards:check
 ```
 
-### Local Dagger Helpers
-
-The repo-local Dagger module is for local and ad hoc portable runs. GitHub
-Actions keeps its separate workflow in `.github/workflows/build.yml`; CI does
-not call Dagger.
+Build and exercise a local VM when an image-level change needs runtime proof:
 
 ```bash
-dagger functions
-dagger call metadata
-dagger call release --publish=false
+just build
+just build-qcow2
+just run-vm-qcow2
 ```
 
-Shortcuts are available through `just`:
+## Repository map
 
-```bash
-just dagger-metadata
-just dagger-build
-just dagger-release-dry-run
-just dagger-publish-local
-just dagger-release
-```
+| Path | Purpose |
+| --- | --- |
+| `Containerfile` | Stable and NVIDIA final image assembly |
+| `Containerfile.dakota` | Experimental Dakota allowlisted overlay |
+| `build/` | Build-time product assembly and validation |
+| `custom/` | Dudley-only product files and ujust wiring |
+| `.github/workflows/` | Stream validation and publication |
+| `tests/` | Image, workflow, and documentation contracts |
+| `docs/` | Operator, maintenance, and historical detail |
 
-Run the local release path against GHCR after authenticating with a token:
+Supporting documents:
 
-```bash
-dagger call release \
-  --registry ghcr.io/joshyorko \
-  --registry-username "$GITHUB_ACTOR" \
-  --registry-password env:GITHUB_TOKEN \
-  --signing-key env:SIGNING_SECRET \
-  --signing-password env:SIGNING_PASSWORD \
-  --source-uri https://github.com/joshyorko/dudley-os
-```
+- [Operator runbook](docs/operations.md)
+- [Maintenance and ownership](docs/maintenance.md)
+- [Legacy migration record](docs/history/dudleys-second-bedroom-migration.md)
 
-Try another registry without code changes:
+## Upstream and supporting projects
 
-```bash
-dagger call release --registry registry.gitlab.com/group --publish=false
-dagger call release --registry localhost:5000 --sign=false --attest=false
-```
-
-The Dagger module exposes `metadata`, `build`, `publish`, `sbom`,
-`attest-sbom`, `attest-provenance`, `sign`, and `release`. It uses Buildah
-from `quay.io/buildah/stable:v1.41`, builds this repo's Docker-format
-`Containerfile`, keeps the pinned Bluefin base image and pinned `dsb-common`
-OCI resource from the Containerfile, applies the OCI labels, plans `stable`,
-`stable.YYYYMMDD`, and `YYYYMMDD` tags, generates a Trivy SPDX JSON SBOM, and
-can use cosign for key-based signing and SBOM/SLSA provenance attestations when
-`--signing-key` is provided. Loopback registries (`localhost`, `127.0.0.1`, and
-`[::1]`) publish with `--tls-verify=false`; all other registries use TLS
-verification.
-
-Full workflow:
-
-```bash
-just build && just build-qcow2 && just run-vm-qcow2
-```
-
-## Community
-
-- [Universal Blue Discord](https://discord.gg/WEu6BdFEtp)
-- [bootc Discussion](https://github.com/bootc-dev/bootc/discussions)
-
-## Learn More
-
-- [Universal Blue Documentation](https://universal-blue.org/)
-- [bootc Documentation](https://containers.github.io/bootc/)
-- [Video Tutorial by TesterTech](https://www.youtube.com/watch?v=IxBl11Zmq5wE)
-
-## Security
-
-This template provides security features for production use:
-- SBOM generation (Software Bill of Materials) for supply chain transparency
-- Keyless image signing with cosign for cryptographic verification
-- Automated security updates via Renovate
-- Build provenance tracking
+- [Project Bluefin](https://projectbluefin.io) provides Dudley's base images and inherited desktop experience.
+- [Project Bluefin documentation](https://docs.projectbluefin.io) documents the upstream operating model.
+- [Project Bluefin Actions](https://github.com/projectbluefin/actions) provides Dudley's shared build, publish, signing, and provenance actions.
+- [`dsb-common`](https://github.com/joshyorko/dsb-common) owns reusable DSB and Dudley payload.
+- [Universal Blue](https://universal-blue.org) is the broader image ecosystem.
+- [bootc](https://containers.github.io/bootc/) provides the transactional image-based operating-system model.
