@@ -8,49 +8,6 @@ A custom bootc operating system image for the DSB organisation, built on the les
   </a>
 </p>
 
-The Stable and NVIDIA streams use a **thin-product multi-stage build** on canonical Project Bluefin bases, then layer in DSB shared configuration plus Dudley-specific payloads. Dakota is a separate file-only overlay on the upstream Project Bluefin Dakota image. See the [Architecture](#architecture) section below for details.
-
-**Dudley Stable and NVIDIA inherit Project Bluefin directly and restore its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so those streams explicitly add the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base. Experimental Dakota does not claim that Fedora/Chrome/DX parity.
-
-> Be the one who moves, not the one who is moved.
-
-## What Makes Dudley Different?
-
-Stable and NVIDIA customize their respective Project Bluefin bases; Dakota uses the separate upstream Dakota base with a narrower file-only overlay. Dudley is assembled from:
-
-### Shared Organisation Layer (dsb-common)
-- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
-  - `/system_files/shared`
-  - `/system_files/dudley`
-- Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
-- Dudley's Google Chrome RPM repository definition now comes from `dsb-common` at `/system_files/dudley/etc/yum.repos.d/google-chrome.repo`.
-- Dudley VS Code Insiders assets now come from `dsb-common`, including:
-  - `/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
-  - `/usr/share/ublue-os/vscode-extensions.list`
-  - `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh`
-
-### Product-specific Additions (this repo)
-- Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
-- Google Chrome is baked into the final image from the shared Dudley RPM repository definition in `dsb-common`; final assembly disables the repo after install so Chrome updates remain image-build controlled
-- Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
-- Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
-- Dudley-only local wallpaper enforcement glue in `custom/system_files/`
-- Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
-- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
-- JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
-- NVIDIA build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable`; `ghcr.io/joshyorko/dudley-os:nvidia` is the canonical user-facing tag, while the other published NVIDIA tags remain compatibility aliases
-- Experimental Dakota assembly remains a file-only overlay and does not claim Bluefin, Google Chrome, or DX parity
-
-### Configuration Changes
-- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows; VFIO early loading, Docker IP forwarding, libvirt relabeling, and the current Incus SELinux policy preserve the previous Bluefin DX host contract
-- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker, Incus, and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
-- Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall and D-Bus activation contracts, so GNOME does not see duplicate entries and can launch the Flatpak-backed search provider
-- Bazaar uses its Flatpak-native background mode and a modern curated-page schema compatible with Bazaar 0.9
-- The `plugdev` group is preserved for inherited U2F and keyboard udev rules
-- GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
-- First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
-- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*`; on Stable and NVIDIA, the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
-
 *Last updated: 2026-07-29*
 
 ---
@@ -95,6 +52,51 @@ Dakota is the experimental distroless GNOME OS path for daily-driver qualificati
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:dakota --enforce-container-sigpolicy
 ```
+
+The Stable and NVIDIA streams use a **thin-product multi-stage build** on canonical Project Bluefin bases, then layer in DSB shared configuration plus Dudley-specific payloads. Dakota is a separate file-only overlay on the upstream Project Bluefin Dakota image. See the [Architecture](#architecture) section below for details.
+
+**Dudley Stable and NVIDIA inherit Project Bluefin directly and restore its established DX contract as a product layer.** Project Bluefin no longer publishes a separate DX image, so those streams explicitly add the container, virtualization, diagnostics, and developer packages that were present in the previous Bluefin DX base. Experimental Dakota does not claim that Fedora/Chrome/DX parity.
+
+> Be the one who moves, not the one who is moved.
+
+## What Makes Dudley Different?
+
+Stable and NVIDIA customize their respective Project Bluefin bases; Dakota uses the separate upstream Dakota base with a narrower file-only overlay. Dudley is assembled from:
+
+### Shared Organisation Layer (dsb-common)
+- **`ghcr.io/joshyorko/dsb-common:latest`** is consumed as an OCI layer at build time through the finalized contract paths:
+  - `/system_files/shared`
+  - `/system_files/dudley`
+- Dudley wallpapers now come from `dsb-common` at `/system_files/dudley/usr/share/backgrounds/dudley`.
+- Dudley's Google Chrome RPM repository definition now comes from `dsb-common` at `/system_files/dudley/etc/yum.repos.d/google-chrome.repo`.
+- Dudley VS Code Insiders assets now come from `dsb-common`, including:
+  - `/usr/share/ublue-os/homebrew/dudley-dev.Brewfile`
+  - `/usr/share/ublue-os/vscode-extensions.list`
+  - `/usr/share/ublue-os/user-setup.hooks.d/20-dudley-vscode-extensions.sh`
+
+### Product-specific Additions (this repo)
+- Dudley final-assembly logic in `Containerfile` and `build/10-build.sh`
+- Google Chrome is baked into the final image from the shared Dudley RPM repository definition in `dsb-common`; final assembly disables the repo after install so Chrome updates remain image-build controlled
+- Dudley final-image metadata generation for `/etc/dudley/build-manifest.json` and `/usr/share/ublue-os/image-info.json`
+- Dudley-specific ujust wiring in `custom/ujust/`, delegated to the shared `dsb-common` Dudley runtime commands for Brewfile setup
+- Dudley-only local wallpaper enforcement glue in `custom/system_files/`
+- Bluefin's top-panel command menu is kept functional with its Mission Center launcher plus build-time checks for the extension, menu configuration, documentation PDF, and helper commands
+- Dudley DX compatibility layer with Docker Engine, Compose, Buildx, containerd, VS Code, Cockpit, Incus/LXC, libvirt/QEMU, virt-manager, Podman companion tools, and development diagnostics
+- JetBrains Mono and the established Bluefin terminal sizing are restored as baked defaults, and generic monospace users such as VS Code and Codex Desktop resolve to JetBrains Mono instead of Noto Sans Mono
+- NVIDIA build workflow based on `ghcr.io/projectbluefin/bluefin-nvidia:stable`; `ghcr.io/joshyorko/dudley-os:nvidia` is the canonical user-facing tag, while the other published NVIDIA tags remain compatibility aliases
+- Experimental Dakota assembly remains a file-only overlay and does not claim Bluefin, Google Chrome, or DX parity
+
+### Configuration Changes
+- `docker.socket`, `podman.socket`, and `libvirtd.socket` enabled for Docker, rootless Podman, and local virtualization workflows; VFIO early loading, Docker IP forwarding, libvirt relabeling, and the current Incus SELinux policy preserve the previous Bluefin DX host contract
+- Late-installed DX service accounts are promoted into bootc's immutable account database before publish, and wheel users are enrolled into the Docker, Incus, and libvirt groups at first boot; NVIDIA images also validate the driver, settings utility, container toolkit, CDI configuration, and kernel module during the image build
+- Stale inherited Bazaar RPM launcher/appstream metadata is removed during final assembly while preserving Bluefin's Flatpak Bazaar preinstall and D-Bus activation contracts, so GNOME does not see duplicate entries and can launch the Flatpak-backed search provider
+- Bazaar uses its Flatpak-native background mode and a modern curated-page schema compatible with Bazaar 0.9
+- The `plugdev` group is preserved for inherited U2F and keyboard udev rules
+- GLib schemas are compiled after applying the shared Dudley layer so background defaults from `dsb-common` are active in the final image
+- First-login setup hooks are stamped with content-derived versions so wallpaper and VS Code payload updates rerun cleanly
+- Final runtime image identity is stamped as `ghcr.io/joshyorko/dudley-os:*`; on Stable and NVIDIA, the terminal banner inherits Project Bluefin's umotd commands, tips, issue reporting, Ask Bluefin, and documentation links
+
+
 
 ## What's Included
 
