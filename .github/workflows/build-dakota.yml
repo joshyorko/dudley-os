@@ -1,0 +1,115 @@
+---
+name: Build Dakota container image
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/README.md'
+
+env:
+  IMAGE_DESC: "Dudley OS Dakota - file-only Dudley overlay on Project Bluefin Dakota"
+  IMAGE_KEYWORDS: "bootc,ublue,universal-blue,dakota"
+  IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_NAME: "${{ github.event.repository.name }}"
+  DEFAULT_TAG: "dakota"
+  DAKOTA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/dakota:stable@sha256:5989c44875101aaf8928f36360c8434f90ca485cb67d07ec07d7196c44a61f6c"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_push_dakota:
+    name: Build and push Dakota image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - name: Prepare environment
+        run: |
+          echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> "${GITHUB_ENV}"
+          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "${GITHUB_ENV}"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup runner tools
+        uses: projectbluefin/actions/bootc-build/setup-runner@edf8773321239d6a6ecb15ad3fd60bd0b99ccec5 # v1
+        with:
+          storage-backend: none
+          install-tools: '["just"]'
+      - name: Preflight publish
+        id: preflight
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: projectbluefin/actions/bootc-build/preflight@edf8773321239d6a6ecb15ad3fd60bd0b99ccec5 # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.IMAGE_NAME }}
+      - name: Get current date
+        id: date
+        run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_OUTPUT}"
+      - name: Image Metadata
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        id: metadata
+        with:
+          tags: |
+            type=raw,value=dakota
+            type=raw,value=dakota.{{date 'YYYYMMDD'}}
+            type=raw,value={{date 'YYYYMMDD'}}-dakota
+            type=ref,event=pr,prefix=dakota-pr-
+            type=sha,prefix=dakota-sha-
+          labels: |
+            org.opencontainers.image.created=${{ steps.date.outputs.date }}
+            org.opencontainers.image.description=${{ env.IMAGE_DESC }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/${{ github.sha }}/Containerfile.dakota
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
+            containers.bootc=1
+          sep-tags: " "
+          sep-annotations: " "
+      - name: Build Dakota image
+        id: build_image
+        shell: bash
+        env:
+          OCI_LABELS: ${{ steps.metadata.outputs.labels }}
+        run: |
+          set -euo pipefail
+          export CONTAINERFILE=./Containerfile.dakota
+          export BASE_IMAGE_REF="${DAKOTA_BASE_IMAGE_REF}"
+          export METADATA_IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAME}"
+          export FINAL_IMAGE_REF="${IMAGE_REGISTRY}/${IMAGE_NAME}:dakota"
+          sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
+          echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
+      - name: Push To GHCR
+        id: push
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: projectbluefin/actions/bootc-build/push-image@edf8773321239d6a6ecb15ad3fd60bd0b99ccec5 # v1
+        with:
+          image-name: ${{ env.IMAGE_NAME }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          default-tag: ${{ env.DEFAULT_TAG }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sign image and publish provenance
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@edf8773321239d6a6ecb15ad3fd60bd0b99ccec5 # v1
+        with:
+          image: ${{ steps.preflight.outputs.image-ref }}
+          digest: ${{ steps.push.outputs.digest }}
+          signing-mode: keyless
+          generate-sbom: "false"
+          push-attestation: "true"
+          certificate-identity-regexp: '^https://github\.com/joshyorko/dudley-os/\.github/workflows/build-dakota\.yml@refs/heads/main$'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.IMAGE_NAME }}

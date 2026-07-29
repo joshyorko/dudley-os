@@ -1,0 +1,17 @@
+{
+  "dakota": {
+    "input": "d2deb24879bfba807403570cf12acef6ea85fcde51f13e67e32fca0baa5439fb",
+    "light": "c7cbdcdc4f9302cb36142aa3a954d84e507007a634dcd52c4b91425456b18ac3",
+    "dark": "c0a0dc22eb691a53bfd39e522316c7c4402874da96704bb4876b92dfeac21790"
+  },
+  "nvidia": {
+    "input": "b105c6972243eb24eb7f216932da53b830e8508f8d05a4fd65947226efac646f",
+    "light": "03f5eae02e45b2eaff5d78759b3c4c958645ea0d95d0290188095e3d69b66689",
+    "dark": "43b7e1caf6d9c23d8f69d06ad561b5870d3d95443cc81ad79e2fa5d3383389a2"
+  },
+  "stable": {
+    "input": "ecf8a669869625c825bb5a68388e796f1c4bf83607e1c3d145e4a25adebc9c81",
+    "light": "28226952000fdb68362ff719644b941ddceff66ffc11daa6e869e996bba9ca67",
+    "dark": "9e9aa5ab5e7ef7b7fb9f687bafc995f44dd08895546cc88640e7aa5cb2b4c601"
+  }
+}

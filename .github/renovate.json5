@@ -24,9 +24,18 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^Containerfile$/"],
+      "managerFilePatterns": ["/^Containerfile$/", "/^Containerfile\\.dakota$/"],
       "matchStrings": [
         "ARG BASE_IMAGE_REF=\"(?<depName>ghcr\\.io\\/projectbluefin\\/bluefin):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^Containerfile\\.dakota$/"],
+      "matchStrings": [
+        "ARG BASE_IMAGE_REF=\"(?<depName>ghcr\\.io\\/projectbluefin\\/dakota):(?<currentValue>[^@\"]+)@(?<currentDigest>sha256:[a-f0-9]+)\""
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"

@@ -1,0 +1,20 @@
+{
+  "name": "dudley-release-cards",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "cards": "node scripts/generate-card-images.mjs",
+    "cards:check": "node scripts/generate-card-images.mjs --check",
+    "test:cards": "node --test tests/test-card-assets.mjs"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "5.2.8",
+    "@resvg/resvg-js": "2.6.2",
+    "pngjs": "7.0.0",
+    "satori": "0.28.0"
+  }
+}

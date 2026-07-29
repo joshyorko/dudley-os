@@ -1,5 +1,6 @@
 export image_name := env("IMAGE_NAME", "dudley-os")
 export default_tag := env("DEFAULT_TAG", "stable")
+export containerfile := env("CONTAINERFILE", "./Containerfile")
 export bib_image := env("BIB_IMAGE", "quay.io/centos-bootc/bootc-image-builder:latest@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b")
 export dagger_registry := env("DAGGER_REGISTRY", "ghcr.io/joshyorko")
 export dagger_local_registry := env("LOCAL_REGISTRY", "localhost:5000")
@@ -40,8 +41,10 @@ test-unit:
     bash tests/test-dx-runtime-contract.sh
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
+    bash tests/test-dakota-variant-contract.sh
     bash tests/test-nvidia-variant-contract.sh
     bash tests/test-publish-workflow-contract.sh
+    npm run test:cards
 
 # Run validation and unit tests
 [group('Test')]
@@ -151,7 +154,7 @@ build $target_image=image_name $tag=default_tag:
         "${BUILD_ARGS[@]}" \
         "${LABEL_ARGS[@]}" \
         --pull=newer \
-        --file ./Containerfile \
+        --file "{{ containerfile }}" \
         --tag "${target_image}:${tag}" \
         .
 
@@ -372,6 +375,14 @@ lint:
     fi
     # Run shellcheck on all Bash scripts
     /usr/bin/find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
+
+[group('Cards')]
+cards:
+    npm run cards
+
+[group('Cards')]
+cards-check:
+    npm run cards:check
 
 # Runs shfmt on all Bash scripts
 format:

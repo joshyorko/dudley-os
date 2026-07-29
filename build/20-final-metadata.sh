@@ -5,6 +5,8 @@ set -euo pipefail
 final_image_ref="${FINAL_IMAGE_REF:-ghcr.io/joshyorko/dudley-os:stable}"
 base_image_ref="${BASE_IMAGE_REF:-ghcr.io/projectbluefin/bluefin:stable}"
 git_commit="${SHA_HEAD_SHORT:-unknown}"
+dudley_stream="${DUDLEY_STREAM:-stable}"
+base_distribution="${BASE_DISTRIBUTION:-bluefin}"
 
 manifest_path="${MANIFEST_PATH:-/etc/dudley/build-manifest.json}"
 image_info_path="${IMAGE_INFO_PATH:-/usr/share/ublue-os/image-info.json}"
@@ -175,43 +177,73 @@ stamp_image_identity() {
         base_image_name="${base_image_name%%[:@]*}"
     fi
 
-    local fedora_version
-    if [[ -f "${image_info_path}" ]]; then
-        fedora_version="$(jq -r '."fedora-version" // empty' "${image_info_path}")"
-    fi
-    if [[ -z "${fedora_version:-}" ]]; then
-        # shellcheck source=/dev/null
-        fedora_version="$(. "${os_release_path}" && printf '%s' "${VERSION_ID:-unknown}")"
-    fi
-
     local image_flavor="main"
     local existing_image_info='{}'
     if [[ -f "${image_info_path}" ]]; then
         existing_image_info="$(cat "${image_info_path}")"
         image_flavor="$(jq -r '."image-flavor" // "dx"' "${image_info_path}")"
     fi
+    if [[ "${base_distribution}" == "dakota" ]]; then
+        image_flavor="dakota"
+    fi
 
     install -d -m 0755 "$(dirname "${image_info_path}")"
 
-    jq \
-        --arg image_name "${image_name}" \
-        --arg image_flavor "${image_flavor}" \
-        --arg image_vendor "${vendor}" \
-        --arg image_ref "ostree-image-signed:docker://${registry}/${vendor}/${image_name}" \
-        --arg image_tag "${image_tag}" \
-        --arg base_image_name "${base_image_name}" \
-        --arg fedora_version "${fedora_version}" \
-        --arg base_image_ref "${base_image_ref}" \
-        '. + {
-            "image-name": $image_name,
-            "image-flavor": $image_flavor,
-            "image-vendor": $image_vendor,
-            "image-ref": $image_ref,
-            "image-tag": $image_tag,
-            "base-image-name": $base_image_name,
-            "fedora-version": $fedora_version,
-            "base-image-ref": $base_image_ref
-        }' <<<"${existing_image_info}" > "${image_info_path}"
+    local image_info
+    if [[ "${base_distribution}" == "dakota" ]]; then
+        image_info="$(jq \
+            --arg image_name "${image_name}" \
+            --arg image_flavor "${image_flavor}" \
+            --arg image_vendor "${vendor}" \
+            --arg image_ref "ostree-image-signed:docker://${registry}/${vendor}/${image_name}" \
+            --arg image_tag "${image_tag}" \
+            --arg base_image_name "${base_image_name}" \
+            --arg base_image_ref "${base_image_ref}" \
+            --arg stream "${dudley_stream}" \
+            --arg base_distribution "${base_distribution}" \
+            'del(."fedora-version") + {
+                "image-name": $image_name,
+                "image-flavor": $image_flavor,
+                "image-vendor": $image_vendor,
+                "image-ref": $image_ref,
+                "image-tag": $image_tag,
+                "base-image-name": $base_image_name,
+                "base-image-ref": $base_image_ref,
+                "stream": $stream,
+                "base-distribution": $base_distribution
+            }' <<<"${existing_image_info}")"
+    else
+        local fedora_version
+        fedora_version="$(jq -r '."fedora-version" // empty' <<<"${existing_image_info}")"
+        if [[ -z "${fedora_version:-}" ]]; then
+            # shellcheck source=/dev/null
+            fedora_version="$(. "${os_release_path}" && printf '%s' "${VERSION_ID:-unknown}")"
+        fi
+        image_info="$(jq \
+            --arg image_name "${image_name}" \
+            --arg image_flavor "${image_flavor}" \
+            --arg image_vendor "${vendor}" \
+            --arg image_ref "ostree-image-signed:docker://${registry}/${vendor}/${image_name}" \
+            --arg image_tag "${image_tag}" \
+            --arg base_image_name "${base_image_name}" \
+            --arg fedora_version "${fedora_version}" \
+            --arg base_image_ref "${base_image_ref}" \
+            --arg stream "${dudley_stream}" \
+            --arg base_distribution "${base_distribution}" \
+            '. + {
+                "image-name": $image_name,
+                "image-flavor": $image_flavor,
+                "image-vendor": $image_vendor,
+                "image-ref": $image_ref,
+                "image-tag": $image_tag,
+                "base-image-name": $base_image_name,
+                "fedora-version": $fedora_version,
+                "base-image-ref": $base_image_ref,
+                "stream": $stream,
+                "base-distribution": $base_distribution
+            }' <<<"${existing_image_info}")"
+    fi
+    printf '%s\n' "${image_info}" > "${image_info_path}"
 
     if [[ -f "${os_release_path}" ]]; then
         local inherited_variant_id
