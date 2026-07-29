@@ -106,3 +106,29 @@ test('generated cards are present at the requested dimensions', async () => {
   }
   assert.deepEqual(Object.keys(hashes).sort(), ['dakota', 'nvidia', 'stable']);
 });
+
+test('README is operator-first and credits its upstream foundation', async () => {
+  const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  for (const required of [
+    'Project Bluefin',
+    'https://docs.projectbluefin.io',
+    'https://github.com/projectbluefin/actions',
+    'docs/operations.md',
+    'docs/maintenance.md',
+    'docs/history/dudleys-second-bedroom-migration.md',
+    'bootc status',
+    'sudo bootc upgrade',
+    'sudo bootc rollback --apply',
+  ]) {
+    assert.ok(readme.includes(required), `README omits ${required}`);
+  }
+
+  for (const removed of [
+    'Create Your Repository',
+    'Rename the Project',
+    "Love Your Image? Let's Go to Production",
+    'Adding Image Rechunking',
+  ]) {
+    assert.ok(!readme.includes(removed), `README retains stale section: ${removed}`);
+  }
+});
