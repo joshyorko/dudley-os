@@ -1,4 +1,4 @@
-ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:5989c44875101aaf8928f36360c8434f90ca485cb67d07ec07d7196c44a61f6c"
+ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
 
 FROM scratch AS ctx
 COPY build/10-dakota.sh /build/10-dakota.sh
