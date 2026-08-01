@@ -41,6 +41,7 @@ test-unit:
     bash tests/test-dx-runtime-contract.sh
     bash tests/test-google-chrome-layout.sh
     bash tests/test-final-metadata.sh
+    bash tests/test-dakota-publish-compression.sh
     bash tests/test-dakota-variant-contract.sh
     bash tests/test-nvidia-variant-contract.sh
     bash tests/test-publish-workflow-contract.sh

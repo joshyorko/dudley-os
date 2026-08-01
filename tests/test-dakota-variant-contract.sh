@@ -147,7 +147,7 @@ if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |
     echo 'FAIL: the final Dakota image assembly must not invoke dnf or dnf5' >&2
     exit 1
 fi
-grep -Eq '^ARG CHROME_BUILDER_REF="registry\.fedoraproject\.org/fedora:42@sha256:[a-f0-9]{64}"$' Containerfile.dakota
+grep -Eq '^ARG CHROME_BUILDER_REF="registry\.fedoraproject\.org/fedora:45@sha256:[a-f0-9]{64}"$' Containerfile.dakota
 grep -Fq 'rpmkeys --checksig /tmp/google-chrome.rpm' Containerfile.dakota
 grep -Fq 'COPY --from=google-chrome /chrome-root /oci/google-chrome' Containerfile.dakota
 grep -Fq 'CONTAINERFILE=./Containerfile.dakota' .github/workflows/build-dakota.yml
