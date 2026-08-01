@@ -42,6 +42,10 @@ command and user API socket, signature-verified native Chrome extracted in a
 disposable Fedora builder stage, and Homebrew-delivered developer tools and VS
 Code Insiders. RPM and DNF do not enter the final Dakota image.
 
+Publish Dakota images with standard `zstd` compression. Do not use
+`zstd:chunked`: Dakota's composefs updater rejects those images with
+`Unexpected EOF reading tar entry`.
+
 Installer-media assembly belongs to `joshyorko/dudley-iso`. Keep both Dakota
 tags available there: the live environment embeds `dakota-nvidia`, while the
 installer selects `dakota` on non-NVIDIA hardware.
