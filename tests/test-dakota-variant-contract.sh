@@ -45,12 +45,19 @@ grep -Fq 'type=sha' .github/workflows/build-dakota.yml
 python3 - <<'PY'
 import json
 import re
+import tomllib
 from pathlib import Path
 
 import yaml
 
 workflow = yaml.safe_load(Path('.github/workflows/build-dakota.yml').read_text())
 assert workflow['env']['DEFAULT_TAG'] == 'dakota'
+dakota_iso_path = Path('iso/dakota.toml')
+assert dakota_iso_path.is_file(), 'Dakota must have a dedicated installer configuration'
+dakota_iso = tomllib.loads(dakota_iso_path.read_text())
+kickstart = dakota_iso['customizations']['installer']['kickstart']['contents']
+assert 'ghcr.io/joshyorko/dudley-os:dakota' in kickstart
+assert 'ghcr.io/joshyorko/dudley-os:stable' not in kickstart
 cards_workflow = yaml.safe_load(Path('.github/workflows/validate-cards.yml').read_text())
 cards_steps = cards_workflow['jobs']['validate']['steps']
 assert cards_steps[0]['uses'] == 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
@@ -66,5 +73,11 @@ assert any(
     for manager in renovate['customManagers']
 )
 PY
+
+dakota_iso_plan=$(just --dry-run build-dakota-iso 2>&1)
+grep -Fq 'CONTAINERFILE=./Containerfile.dakota' <<<"${dakota_iso_plan}"
+grep -Fq 'build "dudley-os" "dakota"' <<<"${dakota_iso_plan}"
+grep -Fq 'env -u SSH_ASKPASS' <<<"${dakota_iso_plan}"
+grep -Fq '_build-bib localhost/dudley-os dakota iso iso/dakota.toml' <<<"${dakota_iso_plan}"
 
 echo 'PASS: Dakota variant assembly and publish contract is present'

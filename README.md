@@ -124,6 +124,14 @@ just build-qcow2
 just run-vm-qcow2
 ```
 
+Build the experimental Dakota container and its correctly targeted installer ISO in one command:
+
+```bash
+just build-dakota-iso
+```
+
+The installer is written to `output/bootiso/install.iso`. Dakota still requires boot, update, and rollback qualification before daily-driver use.
+
 ## Repository map
 
 | Path | Purpose |
