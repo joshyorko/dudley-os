@@ -7,12 +7,21 @@ on:
       - package.json
       - package-lock.json
       - cards/**
+      - scripts/collect-release-status.mjs
       - scripts/generate-card-images.mjs
       - scripts/lib/card-template.mjs
+      - scripts/lib/release-status.mjs
+      - scripts/lib/status-collector.mjs
+      - scripts/validate-pages-output.mjs
       - static/img/characters/**
       - static/img/cards/**
+      - tests/fixtures/status/**
       - tests/test-card-assets.mjs
+      - tests/test-pages-output.mjs
+      - tests/test-release-status.mjs
+      - tests/test-status-collector.mjs
       - README.md
+      - .github/workflows/update-release-cards.yml
       - .github/workflows/validate-cards.yml
   push:
     branches:
@@ -21,12 +30,21 @@ on:
       - package.json
       - package-lock.json
       - cards/**
+      - scripts/collect-release-status.mjs
       - scripts/generate-card-images.mjs
       - scripts/lib/card-template.mjs
+      - scripts/lib/release-status.mjs
+      - scripts/lib/status-collector.mjs
+      - scripts/validate-pages-output.mjs
       - static/img/characters/**
       - static/img/cards/**
+      - tests/fixtures/status/**
       - tests/test-card-assets.mjs
+      - tests/test-pages-output.mjs
+      - tests/test-release-status.mjs
+      - tests/test-status-collector.mjs
       - README.md
+      - .github/workflows/update-release-cards.yml
       - .github/workflows/validate-cards.yml
 
 permissions:
