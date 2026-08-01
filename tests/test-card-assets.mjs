@@ -1,14 +1,21 @@
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { renderCard } from '../scripts/lib/card-template.mjs';
+import { formatCardStatus } from '../scripts/lib/release-status.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const execFileAsync = promisify(execFile);
 const streams = JSON.parse(await readFile(path.join(root, 'cards/streams.json'), 'utf8'));
 const hashes = JSON.parse(await readFile(path.join(root, 'static/img/cards/card-hashes.json'), 'utf8'));
+const statuses = Object.fromEntries(await Promise.all(['stable', 'nvidia', 'dakota'].map(async (name) => [
+  name, JSON.parse(await readFile(path.join(root, 'tests/fixtures/status', `${name}.json`), 'utf8')),
+])));
 const expected = {
   stable: {
     imageRef: 'ghcr.io/joshyorko/dudley-os:stable',
@@ -87,8 +94,8 @@ test('character PNGs are transparent RGBA assets', async () => {
 });
 
 test('stream tag pills use an explicit non-clipping Satori layout', () => {
-  for (const stream of Object.values(streams)) {
-    const pill = elementWithText(renderCard(stream, 'dark', 'data:image/png;base64,AA=='), stream.tag);
+  for (const [name, stream] of Object.entries(streams)) {
+    const pill = elementWithText(renderCard(stream, 'dark', 'data:image/png;base64,AA==', formatCardStatus(statuses[name])), stream.tag);
     assert.ok(pill, `missing ${stream.tag} tag pill`);
     assert.deepEqual(pill.props.style, {
       display: 'flex',
@@ -107,15 +114,55 @@ test('stream tag pills use an explicit non-clipping Satori layout', () => {
   }
 });
 
+test('rendered cards retain the art body and append formatted telemetry', () => {
+  for (const [name, stream] of Object.entries(streams)) {
+    const card = renderCard(stream, 'dark', 'data:image/png;base64,AA==', formatCardStatus(statuses[name]));
+    for (const text of [stream.title, stream.description, stream.tag, stream.imageRef]) {
+      assert.ok(elementWithText(card, text), `${name} card omits ${text}`);
+    }
+    assert.ok(JSON.stringify(card).includes('data:image/png;base64,AA=='), `${name} card omits mascot`);
+    for (const label of ['BUILD', 'PUBLISHED', 'DIGEST', 'QUALIFICATION']) {
+      assert.ok(elementWithText(card, label), `${name} card omits ${label}`);
+    }
+  }
+  assert.ok(elementWithText(renderCard(streams.nvidia, 'light', 'data:image/png;base64,AA==', formatCardStatus(statuses.nvidia)), 'Failed'));
+  assert.ok(elementWithText(renderCard(streams.stable, 'light', 'data:image/png;base64,AA==', formatCardStatus(statuses.stable)), 'Daily driver'));
+});
+
 test('generated cards are present at the requested dimensions', async () => {
   for (const name of Object.keys(streams)) {
     for (const theme of ['light', 'dark']) {
       const image = await decode(`static/img/cards/${name}-${theme}.png`);
       assert.equal(image.width, 1600);
-      assert.equal(image.height, 600);
+      assert.equal(image.height, 760);
     }
   }
   assert.deepEqual(Object.keys(hashes).sort(), ['dakota', 'nvidia', 'stable']);
+});
+
+test('generator accepts live status and output directories and rejects unsafe arguments', async () => {
+  const outputDirectory = await mkdtemp('/tmp/dudley-card-test-');
+  const fallbackDirectory = await mkdtemp('/tmp/dudley-card-fallback-test-');
+  try {
+    await execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--status-dir', 'tests/fixtures/status', '--output-dir', outputDirectory], { cwd: root });
+    await execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--output-dir', fallbackDirectory], { cwd: root });
+    const image = PNG.sync.read(await readFile(path.join(outputDirectory, 'stable-light.png')));
+    assert.deepEqual([image.width, image.height], [1600, 760]);
+    const liveHashes = JSON.parse(await readFile(path.join(outputDirectory, 'card-hashes.json'), 'utf8'));
+    const fallbackHashes = JSON.parse(await readFile(path.join(fallbackDirectory, 'card-hashes.json'), 'utf8'));
+    assert.notEqual(liveHashes.stable.input, fallbackHashes.stable.input);
+    for (const args of [
+      ['--wat'],
+      ['--status-dir'],
+      ['--output-dir', '/var/dudley-cards'],
+      ['--status-dir', path.join(outputDirectory, 'missing')],
+    ]) {
+      await assert.rejects(execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', ...args], { cwd: root }));
+    }
+  } finally {
+    await rm(outputDirectory, { recursive: true, force: true });
+    await rm(fallbackDirectory, { recursive: true, force: true });
+  }
 });
 
 test('README is operator-first and credits its upstream foundation', async () => {

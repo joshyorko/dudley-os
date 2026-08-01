@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "stream": "stable",
+  "build": { "state": "completed", "conclusion": "success", "runUrl": "https://github.test/runs/1" },
+  "published": {
+    "state": "complete",
+    "at": "2026-08-01T16:30:00Z",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "imageRef": "ghcr.io/joshyorko/dudley-os:stable",
+    "images": [{ "imageRef": "ghcr.io/joshyorko/dudley-os:stable", "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "at": "2026-08-01T16:30:00Z", "revision": "9dea5f79a23d18691de954da7fdd7e502ba31e02" }]
+  },
+  "qualification": "Daily driver",
+  "checkedAt": "2026-08-01T16:35:00Z"
+}
