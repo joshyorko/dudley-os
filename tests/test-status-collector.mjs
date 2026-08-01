@@ -104,7 +104,7 @@ test('inspects public GHCR images with an explicit anonymous auth file', async (
 });
 
 test('rejects an output directory that escapes an allowed root through a symlink', async (t) => {
-  const outside = await mkdtemp(path.join(os.tmpdir(), 'status-outside-'));
+  const outside = await mkdtemp('/var/tmp/status-outside-');
   const link = path.join(root, 'status-output-escape');
   await symlink(outside, link);
   t.after(async () => {
