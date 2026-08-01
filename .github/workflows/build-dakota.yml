@@ -31,6 +31,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # The Dudley installer embeds the NVIDIA image and selects the normal
+        # image on non-NVIDIA hardware, so both tags are one release contract.
         include:
           - tag: dakota
             base_image_ref: "ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
