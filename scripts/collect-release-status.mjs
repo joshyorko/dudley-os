@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, realpath, writeFile } from 'node:fs/promises';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectAllStatuses } from './lib/status-collector.mjs';
@@ -14,12 +16,23 @@ function requireEnvironment(environment) {
   }
 }
 
-function outputDirectory(directory) {
-  const resolved = path.resolve(directory);
-  if (resolved !== '/tmp' && !resolved.startsWith('/tmp/') && resolved !== root && !resolved.startsWith(`${root}/`)) {
-    throw new Error('STATUS_OUTPUT_DIR must be inside the repository root or /tmp');
+async function outputDirectory(directory) {
+  let candidate = path.resolve(directory);
+  const missing = [];
+  while (true) {
+    try {
+      const actual = path.join(await realpath(candidate), ...missing);
+      const roots = await Promise.all([realpath(root), realpath('/tmp')]);
+      if (roots.some((allowedRoot) => actual === allowedRoot || actual.startsWith(`${allowedRoot}/`))) return actual;
+      throw new Error('STATUS_OUTPUT_DIR must be inside the repository root or /tmp');
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(candidate);
+      if (parent === candidate) throw error;
+      missing.unshift(path.basename(candidate));
+      candidate = parent;
+    }
   }
-  return resolved;
 }
 
 function githubRunAdapter({ token, repository, branch }) {
@@ -40,11 +53,18 @@ function githubRunAdapter({ token, repository, branch }) {
 
 function imageInspectionAdapter() {
   return async (imageRef) => {
-    const output = execFileSync('skopeo', [
-      'inspect', '--no-tags', '--format', '{{.Digest}}|{{index .Labels "org.opencontainers.image.created"}}|{{index .Labels "org.opencontainers.image.revision"}}',
-      `docker://${imageRef}`,
-    ], { encoding: 'utf8' });
-    return parseImageInspection(imageRef, output.trim());
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'dudley-status-auth-'));
+    const authFile = path.join(directory, 'auth.json');
+    writeFileSync(authFile, '{"auths":{}}\n');
+    try {
+      const output = execFileSync('skopeo', [
+        'inspect', '--no-tags', '--format', '{{.Digest}}|{{index .Labels "org.opencontainers.image.created"}}|{{index .Labels "org.opencontainers.image.revision"}}',
+        `docker://${imageRef}`,
+      ], { encoding: 'utf8', env: { ...process.env, REGISTRY_AUTH_FILE: authFile } });
+      return parseImageInspection(imageRef, output.trim());
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   };
 }
 
@@ -60,7 +80,7 @@ function fallbackAdapter(baseUrl) {
 
 async function main(environment = process.env) {
   requireEnvironment(environment);
-  const directory = outputDirectory(environment.STATUS_OUTPUT_DIR);
+  const directory = await outputDirectory(environment.STATUS_OUTPUT_DIR);
   const streams = await import('../cards/streams.json', { with: { type: 'json' } });
   const records = await collectAllStatuses({
     streams: streams.default,
@@ -73,4 +93,6 @@ async function main(environment = process.env) {
   await Promise.all(Object.entries(records).map(([name, record]) => writeFile(path.join(directory, `${name}.json`), `${JSON.stringify(record, null, 2)}\n`)));
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+
+export { imageInspectionAdapter, outputDirectory };
