@@ -7,8 +7,8 @@ COPY custom/ujust /custom/ujust
 COPY custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf /custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf
 COPY custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override /custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override
 COPY custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh /custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:3d09142b48b7dad0902bac5a06b731d6c48fcd10c66f44d1b7968ef8416e9582 /system_files/shared /oci/dsb-common/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:3d09142b48b7dad0902bac5a06b731d6c48fcd10c66f44d1b7968ef8416e9582 /system_files/dudley /oci/dsb-common/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:900b1658ba6a8fef767464be079ee68a27fe0839eacb26c2de95cf19fedcc3bb /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:900b1658ba6a8fef767464be079ee68a27fe0839eacb26c2de95cf19fedcc3bb /system_files/dudley /oci/dsb-common/dudley
 
 FROM ${BASE_IMAGE_REF}
 ARG BASE_IMAGE_REF
