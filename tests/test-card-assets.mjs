@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
@@ -36,6 +36,17 @@ const expected = {
 
 async function decode(relativePath) {
   return PNG.sync.read(await readFile(path.join(root, relativePath)));
+}
+
+function nonRailBackgroundPixels(image, { left, top, width, height }) {
+  let pixels = 0;
+  for (let y = top; y < top + height; y += 1) {
+    for (let x = left; x < left + width; x += 1) {
+      const offset = (y * image.width + x) * 4;
+      if (image.data[offset] !== 16 || image.data[offset + 1] !== 25 || image.data[offset + 2] !== 29) pixels += 1;
+    }
+  }
+  return pixels;
 }
 
 function elementWithText(element, text) {
@@ -140,6 +151,21 @@ test('generated cards are present at the requested dimensions', async () => {
   assert.deepEqual(Object.keys(hashes).sort(), ['dakota', 'nvidia', 'stable']);
 });
 
+test('generated card rasters contain a label and value in every telemetry cell', async () => {
+  for (const name of Object.keys(streams)) {
+    for (const theme of ['light', 'dark']) {
+      const image = await decode(`static/img/cards/${name}-${theme}.png`);
+      for (let cell = 0; cell < 4; cell += 1) {
+        const left = 40 + cell * 394;
+        const labelPixels = nonRailBackgroundPixels(image, { left, top: 630, width: 340, height: 50 });
+        const valuePixels = nonRailBackgroundPixels(image, { left, top: 680, width: 340, height: 50 });
+        assert.ok(labelPixels > 400, `${name}-${theme} cell ${cell + 1} omits its rasterized label`);
+        assert.ok(valuePixels > 80, `${name}-${theme} cell ${cell + 1} omits its rasterized value`);
+      }
+    }
+  }
+});
+
 test('generator accepts live status and output directories and rejects unsafe arguments', async () => {
   const outputDirectory = await mkdtemp('/tmp/dudley-card-test-');
   const fallbackDirectory = await mkdtemp('/tmp/dudley-card-fallback-test-');
@@ -162,6 +188,22 @@ test('generator accepts live status and output directories and rejects unsafe ar
   } finally {
     await rm(outputDirectory, { recursive: true, force: true });
     await rm(fallbackDirectory, { recursive: true, force: true });
+  }
+});
+
+test('generator rejects an output symlink that escapes the approved roots', async () => {
+  const linkParent = await mkdtemp('/tmp/dudley-card-link-test-');
+  const outsideDirectory = await mkdtemp('/var/tmp/dudley-card-outside-test-');
+  const outputLink = path.join(linkParent, 'escape');
+  try {
+    await symlink(outsideDirectory, outputLink, 'dir');
+    await assert.rejects(
+      execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--output-dir', outputLink], { cwd: root }),
+      /outside the repository or \/tmp/,
+    );
+  } finally {
+    await rm(linkParent, { recursive: true, force: true });
+    await rm(outsideDirectory, { recursive: true, force: true });
   }
 });
 

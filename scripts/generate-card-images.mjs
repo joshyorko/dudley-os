@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Resvg } from '@resvg/resvg-js';
 import satori from 'satori';
@@ -34,13 +34,25 @@ function parseArguments(args) {
       else options.outputDirectory = resolve(root, value);
     } else throw new Error(`Unknown argument: ${flag}`);
   }
-  const allowedOutput = options.outputDirectory === root
-    || options.outputDirectory.startsWith(`${root}/`)
-    || options.outputDirectory === '/tmp'
-    || options.outputDirectory.startsWith('/tmp/');
-  if (!allowedOutput) throw new Error(`Output directory must be inside ${root} or /tmp`);
+  const canonicalOutput = canonicalDestination(options.outputDirectory);
+  const allowedOutput = [realpathSync(root), realpathSync('/tmp')].some((allowedRoot) => (
+    canonicalOutput === allowedRoot || canonicalOutput.startsWith(`${allowedRoot}/`)
+  ));
+  if (!allowedOutput) throw new Error('Output directory resolves outside the repository or /tmp');
   if (options.check && options.outputDirectory !== cardDirectory) throw new Error('--check cannot be combined with --output-dir');
   return options;
+}
+
+function canonicalDestination(destination) {
+  let existing = destination;
+  const missing = [];
+  while (!existsSync(existing)) {
+    missing.unshift(basename(existing));
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    existing = parent;
+  }
+  return resolve(realpathSync(existing), ...missing);
 }
 
 function loadStatuses(streams, statusDirectory) {

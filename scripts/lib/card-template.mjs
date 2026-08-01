@@ -25,6 +25,19 @@ const palettes = {
 const box = (style, children) => ({ type: 'div', props: { style, children } });
 const label = (style, children) => ({ type: 'div', props: { style, children } });
 
+function telemetryCell(name, value, color, last = false) {
+  return box(
+    {
+      display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '197px',
+      padding: '0 18px', borderRight: last ? 'none' : '1px solid #34434a',
+    },
+    [
+      label({ fontSize: '11px', fontWeight: 700, letterSpacing: '1.3px', color: '#91a0a6' }, name),
+      label({ fontSize: '13px', fontWeight: 700, color: color ?? '#f1f5f5', marginTop: '7px' }, value),
+    ],
+  );
+}
+
 const toneColors = {
   success: '#7ddc94',
   danger: '#ff8a8a',
@@ -76,18 +89,12 @@ export function renderCard(stream, theme, mascotDataUri, status) {
       box(
         { display: 'flex', width: '100%', height: `${STATUS_H}px`, background: '#10191d', color: '#f1f5f5', paddingLeft: '12px' },
         [
-          ['BUILD', status.buildLabel, toneColors[status.buildTone]],
-          ['PUBLISHED', status.publishedLabel],
-          ['DIGEST', status.digestLabel],
-          ['QUALIFICATION', status.qualificationLabel],
-        ].map(([name, value, color]) => box(
-          { display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '197px', padding: '0 18px', borderRight: '1px solid #34434a' },
-          [
-            label({ fontSize: '11px', fontWeight: 700, letterSpacing: '1.3px', color: '#91a0a6' }, name),
-            label({ fontSize: '13px', fontWeight: 700, color: color ?? '#f1f5f5', marginTop: '7px' }, value),
-          ],
-        )),
-      ),
+          telemetryCell('BUILD', status.buildLabel, toneColors[status.buildTone]),
+          telemetryCell('PUBLISHED', status.publishedLabel),
+          telemetryCell('DIGEST', status.digestLabel),
+          telemetryCell('QUALIFICATION', status.qualificationLabel, undefined, true),
+        ],
+        ),
     ],
   );
 }
