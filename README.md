@@ -14,10 +14,12 @@ Dudley is Josh's personal [Project Bluefin](https://projectbluefin.io) variant: 
 
 Stable is the general daily-driver stream.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/stable-dark.png">
-  <img src="static/img/cards/stable-light.png" alt="Dudley stable release card" width="800">
-</picture>
+<a href="https://github.com/joshyorko/dudley-os/actions/workflows/build.yml">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://joshyorko.github.io/dudley-os/cards/stable-dark.png">
+    <img src="https://joshyorko.github.io/dudley-os/cards/stable-light.png" alt="Dudley stable release card" width="800">
+  </picture>
+</a>
 
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpolicy
@@ -25,10 +27,12 @@ sudo bootc switch ghcr.io/joshyorko/dudley-os:stable --enforce-container-sigpoli
 
 NVIDIA is the daily-driver stream for systems that need Project Bluefin's NVIDIA runtime.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/nvidia-dark.png">
-  <img src="static/img/cards/nvidia-light.png" alt="Dudley nvidia release card" width="800">
-</picture>
+<a href="https://github.com/joshyorko/dudley-os/actions/workflows/build-nvidia.yml">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://joshyorko.github.io/dudley-os/cards/nvidia-dark.png">
+    <img src="https://joshyorko.github.io/dudley-os/cards/nvidia-light.png" alt="Dudley nvidia release card" width="800">
+  </picture>
+</a>
 
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpolicy
@@ -36,10 +40,12 @@ sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpoli
 
 Dakota is experimental. It publishes matching `dakota` and `dakota-nvidia` images for the offline installer and still requires boot, update, and rollback qualification, plus a completed installer test, before daily-driver use.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/dakota-dark.png">
-  <img src="static/img/cards/dakota-light.png" alt="Dudley dakota release card" width="800">
-</picture>
+<a href="https://github.com/joshyorko/dudley-os/actions/workflows/build-dakota.yml">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://joshyorko.github.io/dudley-os/cards/dakota-dark.png">
+    <img src="https://joshyorko.github.io/dudley-os/cards/dakota-light.png" alt="Dudley dakota release card" width="800">
+  </picture>
+</a>
 
 ```bash
 sudo bootc switch ghcr.io/joshyorko/dudley-os:dakota --enforce-container-sigpolicy

@@ -83,13 +83,25 @@ test('stream manifest has the approved public streams', () => {
   });
 });
 
-test('README publishes every stream switch command and card theme', async () => {
+test('README publishes every stream as a linked live card', async () => {
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  const liveCards = {
+    stable: 'build.yml',
+    nvidia: 'build-nvidia.yml',
+    dakota: 'build-dakota.yml',
+  };
   for (const [name, stream] of Object.entries(expected)) {
     assert.ok(readme.includes(stream.switchCommand), `README omits ${name} switch command`);
     for (const theme of ['light', 'dark']) {
-      assert.ok(readme.includes(`static/img/cards/${name}-${theme}.png`), `README omits ${name} ${theme} card`);
+      assert.ok(
+        readme.includes(`https://joshyorko.github.io/dudley-os/cards/${name}-${theme}.png`),
+        `README omits ${name} ${theme} live card`,
+      );
     }
+    assert.ok(
+      readme.includes(`https://github.com/joshyorko/dudley-os/actions/workflows/${liveCards[name]}`),
+      `README omits ${name} card workflow link`,
+    );
   }
 });
 
