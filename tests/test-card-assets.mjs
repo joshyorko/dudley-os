@@ -1,14 +1,21 @@
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { access, mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { renderCard } from '../scripts/lib/card-template.mjs';
+import { formatCardStatus } from '../scripts/lib/release-status.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const execFileAsync = promisify(execFile);
 const streams = JSON.parse(await readFile(path.join(root, 'cards/streams.json'), 'utf8'));
 const hashes = JSON.parse(await readFile(path.join(root, 'static/img/cards/card-hashes.json'), 'utf8'));
+const statuses = Object.fromEntries(await Promise.all(['stable', 'nvidia', 'dakota'].map(async (name) => [
+  name, JSON.parse(await readFile(path.join(root, 'tests/fixtures/status', `${name}.json`), 'utf8')),
+])));
 const expected = {
   stable: {
     imageRef: 'ghcr.io/joshyorko/dudley-os:stable',
@@ -31,6 +38,17 @@ async function decode(relativePath) {
   return PNG.sync.read(await readFile(path.join(root, relativePath)));
 }
 
+function nonRailBackgroundPixels(image, { left, top, width, height }) {
+  let pixels = 0;
+  for (let y = top; y < top + height; y += 1) {
+    for (let x = left; x < left + width; x += 1) {
+      const offset = (y * image.width + x) * 4;
+      if (image.data[offset] !== 16 || image.data[offset + 1] !== 25 || image.data[offset + 2] !== 29) pixels += 1;
+    }
+  }
+  return pixels;
+}
+
 function elementWithText(element, text) {
   if (!element || typeof element !== 'object') return undefined;
   if (element.props?.children === text) return element;
@@ -42,25 +60,56 @@ function elementWithText(element, text) {
   return undefined;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 test('stream manifest has the approved public streams', () => {
   assert.deepEqual(Object.keys(streams).sort(), ['dakota', 'nvidia', 'stable']);
   for (const [key, expectedStream] of Object.entries(expected)) {
     assert.deepEqual(Object.keys(streams[key]).sort(), [
-      'accent', 'description', 'imageRef', 'mascot', 'switchCommand', 'tag', 'title',
+      'accent', 'description', 'imageRef', 'mascot', 'status', 'switchCommand', 'tag', 'title',
     ]);
     assert.equal(streams[key].imageRef, expectedStream.imageRef);
     assert.equal(streams[key].tag, expectedStream.tag);
     assert.equal(streams[key].switchCommand, expectedStream.switchCommand);
   }
+  assert.deepEqual(streams.stable.status, {
+    qualification: 'Daily driver', workflowFile: 'build.yml', imageRefs: ['ghcr.io/joshyorko/dudley-os:stable'],
+  });
+  assert.deepEqual(streams.nvidia.status, {
+    qualification: 'Daily driver', workflowFile: 'build-nvidia.yml', imageRefs: ['ghcr.io/joshyorko/dudley-os:nvidia'],
+  });
+  assert.deepEqual(streams.dakota.status, {
+    qualification: 'Experimental', workflowFile: 'build-dakota.yml', imageRefs: [
+      'ghcr.io/joshyorko/dudley-os:dakota', 'ghcr.io/joshyorko/dudley-os:dakota-nvidia',
+    ],
+  });
 });
 
-test('README publishes every stream switch command and card theme', async () => {
+test('README publishes every stream as a linked live card', async () => {
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  const liveCards = {
+    stable: 'build.yml',
+    nvidia: 'build-nvidia.yml',
+    dakota: 'build-dakota.yml',
+  };
   for (const [name, stream] of Object.entries(expected)) {
     assert.ok(readme.includes(stream.switchCommand), `README omits ${name} switch command`);
-    for (const theme of ['light', 'dark']) {
-      assert.ok(readme.includes(`static/img/cards/${name}-${theme}.png`), `README omits ${name} ${theme} card`);
-    }
+    const workflow = `https://github.com/joshyorko/dudley-os/actions/workflows/${liveCards[name]}`;
+    const darkCard = `https://joshyorko.github.io/dudley-os/cards/${name}-dark.png`;
+    const lightCard = `https://joshyorko.github.io/dudley-os/cards/${name}-light.png`;
+    assert.match(
+      readme,
+      new RegExp(
+        `<a href="${escapeRegExp(workflow)}">\\s*`
+        + `<picture>\\s*`
+        + `<source media="\\(prefers-color-scheme: dark\\)" srcset="${escapeRegExp(darkCard)}">\\s*`
+        + `<img src="${escapeRegExp(lightCard)}" alt="Dudley ${name} release card" width="800">\\s*`
+        + `</picture>\\s*</a>`,
+      ),
+      `README does not wrap the complete ${name} card in its workflow link`,
+    );
   }
 });
 
@@ -76,8 +125,8 @@ test('character PNGs are transparent RGBA assets', async () => {
 });
 
 test('stream tag pills use an explicit non-clipping Satori layout', () => {
-  for (const stream of Object.values(streams)) {
-    const pill = elementWithText(renderCard(stream, 'dark', 'data:image/png;base64,AA=='), stream.tag);
+  for (const [name, stream] of Object.entries(streams)) {
+    const pill = elementWithText(renderCard(stream, 'dark', 'data:image/png;base64,AA==', formatCardStatus(statuses[name])), stream.tag);
     assert.ok(pill, `missing ${stream.tag} tag pill`);
     assert.deepEqual(pill.props.style, {
       display: 'flex',
@@ -96,15 +145,86 @@ test('stream tag pills use an explicit non-clipping Satori layout', () => {
   }
 });
 
+test('rendered cards retain the art body and append formatted telemetry', () => {
+  for (const [name, stream] of Object.entries(streams)) {
+    const card = renderCard(stream, 'dark', 'data:image/png;base64,AA==', formatCardStatus(statuses[name]));
+    for (const text of [stream.title, stream.description, stream.tag, stream.imageRef]) {
+      assert.ok(elementWithText(card, text), `${name} card omits ${text}`);
+    }
+    assert.ok(JSON.stringify(card).includes('data:image/png;base64,AA=='), `${name} card omits mascot`);
+    for (const label of ['BUILD', 'PUBLISHED', 'DIGEST', 'QUALIFICATION']) {
+      assert.ok(elementWithText(card, label), `${name} card omits ${label}`);
+    }
+  }
+  assert.ok(elementWithText(renderCard(streams.nvidia, 'light', 'data:image/png;base64,AA==', formatCardStatus(statuses.nvidia)), 'Failed'));
+  assert.ok(elementWithText(renderCard(streams.stable, 'light', 'data:image/png;base64,AA==', formatCardStatus(statuses.stable)), 'Daily driver'));
+});
+
 test('generated cards are present at the requested dimensions', async () => {
   for (const name of Object.keys(streams)) {
     for (const theme of ['light', 'dark']) {
       const image = await decode(`static/img/cards/${name}-${theme}.png`);
       assert.equal(image.width, 1600);
-      assert.equal(image.height, 600);
+      assert.equal(image.height, 760);
     }
   }
   assert.deepEqual(Object.keys(hashes).sort(), ['dakota', 'nvidia', 'stable']);
+});
+
+test('generated card rasters contain a label and value in every telemetry cell', async () => {
+  for (const name of Object.keys(streams)) {
+    for (const theme of ['light', 'dark']) {
+      const image = await decode(`static/img/cards/${name}-${theme}.png`);
+      for (let cell = 0; cell < 4; cell += 1) {
+        const left = 40 + cell * 394;
+        const labelPixels = nonRailBackgroundPixels(image, { left, top: 630, width: 340, height: 50 });
+        const valuePixels = nonRailBackgroundPixels(image, { left, top: 680, width: 340, height: 50 });
+        assert.ok(labelPixels > 400, `${name}-${theme} cell ${cell + 1} omits its rasterized label`);
+        assert.ok(valuePixels > 80, `${name}-${theme} cell ${cell + 1} omits its rasterized value`);
+      }
+    }
+  }
+});
+
+test('generator accepts live status and output directories and rejects unsafe arguments', async () => {
+  const outputDirectory = await mkdtemp('/tmp/dudley-card-test-');
+  const fallbackDirectory = await mkdtemp('/tmp/dudley-card-fallback-test-');
+  try {
+    await execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--status-dir', 'tests/fixtures/status', '--output-dir', outputDirectory], { cwd: root });
+    await execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--output-dir', fallbackDirectory], { cwd: root });
+    const image = PNG.sync.read(await readFile(path.join(outputDirectory, 'stable-light.png')));
+    assert.deepEqual([image.width, image.height], [1600, 760]);
+    const liveHashes = JSON.parse(await readFile(path.join(outputDirectory, 'card-hashes.json'), 'utf8'));
+    const fallbackHashes = JSON.parse(await readFile(path.join(fallbackDirectory, 'card-hashes.json'), 'utf8'));
+    assert.notEqual(liveHashes.stable.input, fallbackHashes.stable.input);
+    for (const args of [
+      ['--wat'],
+      ['--status-dir'],
+      ['--output-dir', '/var/dudley-cards'],
+      ['--status-dir', path.join(outputDirectory, 'missing')],
+    ]) {
+      await assert.rejects(execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', ...args], { cwd: root }));
+    }
+  } finally {
+    await rm(outputDirectory, { recursive: true, force: true });
+    await rm(fallbackDirectory, { recursive: true, force: true });
+  }
+});
+
+test('generator rejects an output symlink that escapes the approved roots', async () => {
+  const linkParent = await mkdtemp('/tmp/dudley-card-link-test-');
+  const outsideDirectory = await mkdtemp('/var/tmp/dudley-card-outside-test-');
+  const outputLink = path.join(linkParent, 'escape');
+  try {
+    await symlink(outsideDirectory, outputLink, 'dir');
+    await assert.rejects(
+      execFileAsync(process.execPath, ['scripts/generate-card-images.mjs', '--output-dir', outputLink], { cwd: root }),
+      /outside the repository or \/tmp/,
+    );
+  } finally {
+    await rm(linkParent, { recursive: true, force: true });
+    await rm(outsideDirectory, { recursive: true, force: true });
+  }
 });
 
 test('README is operator-first and credits its upstream foundation', async () => {

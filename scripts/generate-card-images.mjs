@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Resvg } from '@resvg/resvg-js';
 import satori from 'satori';
 import { renderCard, W, H } from './lib/card-template.mjs';
+import { formatCardStatus, validateStatusRecord } from './lib/release-status.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cardDirectory = join(root, 'static/img/cards');
@@ -20,6 +21,55 @@ const fonts = [
 ];
 const themes = ['light', 'dark'];
 const requiredFields = ['title', 'description', 'imageRef', 'tag', 'accent', 'mascot', 'switchCommand'];
+
+function parseArguments(args) {
+  const options = { check: false, statusDirectory: null, outputDirectory: cardDirectory };
+  for (let index = 0; index < args.length; index += 1) {
+    const flag = args[index];
+    if (flag === '--check') options.check = true;
+    else if (flag === '--status-dir' || flag === '--output-dir') {
+      const value = args[++index];
+      if (!value || value.startsWith('--')) throw new Error(`Missing value for ${flag}`);
+      if (flag === '--status-dir') options.statusDirectory = resolve(root, value);
+      else options.outputDirectory = resolve(root, value);
+    } else throw new Error(`Unknown argument: ${flag}`);
+  }
+  const canonicalOutput = canonicalDestination(options.outputDirectory);
+  const allowedOutput = [realpathSync(root), realpathSync('/tmp')].some((allowedRoot) => (
+    canonicalOutput === allowedRoot || canonicalOutput.startsWith(`${allowedRoot}/`)
+  ));
+  if (!allowedOutput) throw new Error('Output directory resolves outside the repository or /tmp');
+  if (options.check && options.outputDirectory !== cardDirectory) throw new Error('--check cannot be combined with --output-dir');
+  return options;
+}
+
+function canonicalDestination(destination) {
+  let existing = destination;
+  const missing = [];
+  while (!existsSync(existing)) {
+    missing.unshift(basename(existing));
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    existing = parent;
+  }
+  return resolve(realpathSync(existing), ...missing);
+}
+
+function loadStatuses(streams, statusDirectory) {
+  if (!statusDirectory) {
+    return Object.fromEntries(Object.entries(streams).map(([name, stream]) => [name, {
+      buildLabel: 'Unavailable', buildTone: 'warning', publishedLabel: 'Not published', digestLabel: '—',
+      qualificationLabel: stream.status.qualification,
+    }]));
+  }
+  return Object.fromEntries(Object.keys(streams).map((name) => {
+    const filename = join(statusDirectory, `${name}.json`);
+    if (!existsSync(filename)) throw new Error(`Missing status file: ${filename}`);
+    const record = validateStatusRecord(JSON.parse(readFileSync(filename, 'utf8')));
+    if (record.stream !== name) throw new Error(`Status stream mismatch for ${name}`);
+    return [name, formatCardStatus(record)];
+  }));
+}
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -55,7 +105,7 @@ function loadStreams() {
   return streams;
 }
 
-async function buildCards(streams) {
+async function buildCards(streams, statuses) {
   const commonHashInputs = [
     readFileSync(join(fontDirectory, 'inter-latin-400-normal.woff')),
     readFileSync(join(fontDirectory, 'inter-latin-700-normal.woff')),
@@ -68,12 +118,12 @@ async function buildCards(streams) {
   for (const name of Object.keys(streams).sort()) {
     const stream = streams[name];
     const mascot = readFileSync(resolve(root, stream.mascot));
-    const inputHash = hash(JSON.stringify(canonicalize(stream)), mascot, ...commonHashInputs);
+    const inputHash = hash(JSON.stringify(canonicalize(stream)), JSON.stringify(canonicalize(statuses[name])), mascot, ...commonHashInputs);
     const mascotDataUri = `data:image/png;base64,${mascot.toString('base64')}`;
     cardHashes[name] = { input: inputHash };
 
     for (const theme of themes) {
-      const svg = await satori(renderCard(stream, theme, mascotDataUri), {
+      const svg = await satori(renderCard(stream, theme, mascotDataUri, statuses[name]), {
         width: W,
         height: H,
         fonts,
@@ -112,18 +162,19 @@ async function checkGenerated(generatedDirectory, generated) {
 }
 
 async function main() {
+  const options = parseArguments(process.argv.slice(2));
   const streams = loadStreams();
-  const check = process.argv.slice(2).join(' ') === '--check';
-  const outputDirectory = check ? mkdtempSync(join(tmpdir(), 'dudley-cards-')) : cardDirectory;
+  const statuses = loadStatuses(streams, options.statusDirectory);
+  const outputDirectory = options.check ? mkdtempSync(join(tmpdir(), 'dudley-cards-')) : options.outputDirectory;
   try {
-    const generated = await buildCards(streams);
-    if (check) {
+    const generated = await buildCards(streams, statuses);
+    if (options.check) {
       await writeGenerated(outputDirectory, generated);
       await checkGenerated(outputDirectory, generated);
     }
     else await writeGenerated(outputDirectory, generated);
   } finally {
-    if (check) rmSync(outputDirectory, { recursive: true, force: true });
+    if (options.check) rmSync(outputDirectory, { recursive: true, force: true });
   }
 }
 
