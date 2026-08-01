@@ -46,12 +46,29 @@ test('normalizes queued and in-progress workflows as running', () => {
   }
 });
 
-test('formats cancelled and successful workflow conclusions', () => {
-  for (const [conclusion, label, tone] of [['cancelled', 'Cancelled', 'warning'], ['success', 'Passing', 'success']]) {
+test('formats every completed workflow conclusion as terminal', () => {
+  const cases = [
+    ['success', 'Passing', 'success'],
+    ['failure', 'Failed', 'danger'],
+    ['timed_out', 'Failed', 'danger'],
+    ['action_required', 'Failed', 'danger'],
+    ['startup_failure', 'Failed', 'danger'],
+    ['stale', 'Failed', 'danger'],
+    ['cancelled', 'Cancelled', 'warning'],
+    ['neutral', 'Neutral', 'warning'],
+    ['skipped', 'Skipped', 'warning'],
+  ];
+  for (const [conclusion, label, tone] of cases) {
     const record = buildStatusRecord({ name: 'stable', stream: streams.stable, run: run({ conclusion }), images: [image(streams.stable.imageRef)], checkedAt: '2026-08-01T16:35:00Z' });
     assert.equal(formatCardStatus(record).buildLabel, label);
     assert.equal(formatCardStatus(record).buildTone, tone);
   }
+});
+
+test('rejects unknown completed workflow conclusions', () => {
+  assert.throws(() => normalizeWorkflowRun(run({ conclusion: 'mystery' })), /invalid workflow conclusion/);
+  const record = buildStatusRecord({ name: 'stable', stream: streams.stable, run: run(), images: [image(streams.stable.imageRef)], checkedAt: '2026-08-01T16:35:00Z' });
+  assert.throws(() => formatCardStatus({ ...record, build: { ...record.build, conclusion: 'mystery' } }), /invalid workflow conclusion/);
 });
 
 test('failed workflow retains the current successful image metadata', () => {
@@ -95,6 +112,30 @@ test('uses the previous complete Dakota pair when the current pair is incomplete
   assert.equal(record.published.state, 'pair_incomplete');
   assert.deepEqual(record.published.images, previous.published.images);
   assert.equal(formatCardStatus(record).buildLabel, 'Pair incomplete');
+});
+
+test('preserves the last complete Dakota pair across repeated incomplete refreshes', () => {
+  const complete = buildStatusRecord({
+    name: 'dakota', stream: streams.dakota, run: run(),
+    images: streams.dakota.status.imageRefs.map((imageRef) => image(imageRef)),
+    checkedAt: '2026-08-01T16:35:00Z',
+  });
+  const firstIncomplete = buildStatusRecord({
+    name: 'dakota', stream: streams.dakota, run: run(),
+    images: [image(streams.dakota.status.imageRefs[0])], previous: complete,
+    checkedAt: '2026-08-02T16:35:00Z',
+  });
+  const secondIncomplete = buildStatusRecord({
+    name: 'dakota', stream: streams.dakota, run: run(),
+    images: [image(streams.dakota.status.imageRefs[1])], previous: firstIncomplete,
+    checkedAt: '2026-08-03T16:35:00Z',
+  });
+
+  assert.equal(secondIncomplete.published.state, 'pair_incomplete');
+  assert.equal(secondIncomplete.published.at, '2026-08-01T16:30:00Z');
+  assert.equal(secondIncomplete.published.digest, digest);
+  assert.equal(secondIncomplete.published.imageRef, 'ghcr.io/joshyorko/dudley-os:dakota');
+  assert.deepEqual(secondIncomplete.published.images, complete.published.images);
 });
 
 test('marks a first incomplete Dakota pair as unpublished', () => {

@@ -4,6 +4,18 @@ const IMAGE_REF = /^ghcr\.io\/joshyorko\/dudley-os:[a-z0-9][a-z0-9-]*$/;
 const WORKFLOW_FILE = /^[a-z0-9][a-z0-9-]*\.yml$/;
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const QUALIFICATIONS = new Set(['Daily driver', 'Experimental']);
+const COMPLETED_CONCLUSIONS = new Set([
+  'success',
+  'failure',
+  'timed_out',
+  'action_required',
+  'startup_failure',
+  'stale',
+  'cancelled',
+  'neutral',
+  'skipped',
+]);
+const FAILURE_CONCLUSIONS = new Set(['failure', 'timed_out', 'action_required', 'startup_failure', 'stale']);
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
   month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
 });
@@ -39,7 +51,7 @@ export function normalizeWorkflowRun(run) {
   assert(run && typeof run === 'object', 'workflow run is required');
   assert(['queued', 'in_progress', 'completed'].includes(run.status), 'invalid workflow state');
   assert(typeof run.html_url === 'string' && run.html_url.length > 0, 'invalid workflow run URL');
-  if (run.status === 'completed') assert(typeof run.conclusion === 'string' && run.conclusion.length > 0, 'completed workflow requires a conclusion');
+  if (run.status === 'completed') assert(COMPLETED_CONCLUSIONS.has(run.conclusion), 'invalid workflow conclusion');
   return { state: run.status, conclusion: run.conclusion ?? null, runUrl: run.html_url };
 }
 
@@ -64,7 +76,12 @@ function completePublication(images) {
 }
 
 function incompletePublication(imageRef, previous) {
-  if (previous?.published?.state === 'complete') {
+  if (
+    ['complete', 'pair_incomplete'].includes(previous?.published?.state)
+    && previous.published.at !== null
+    && previous.published.digest !== null
+    && previous.published.images.length > 0
+  ) {
     return { ...previous.published, state: 'pair_incomplete' };
   }
   return { state: 'pair_incomplete', at: null, digest: null, imageRef, images: [] };
@@ -74,6 +91,7 @@ export function buildStatusRecord({ name, stream, run, images, previous, checked
   validateStreamConfig(name, stream);
   assert(Array.isArray(images), 'images are required');
   images.forEach(validateImage);
+  if (previous !== undefined) validateStatusRecord(previous);
   assert(validTimestamp(checkedAt), 'invalid checked timestamp');
   const build = normalizeWorkflowRun(run);
   const { imageRefs } = stream.status;
@@ -104,6 +122,11 @@ export function validateStatusRecord(record) {
   assert(record.schemaVersion === 1, 'invalid schema version');
   assert(typeof record.stream === 'string' && record.stream.length > 0, 'invalid stream');
   assert(record.build && ['queued', 'in_progress', 'completed'].includes(record.build.state), 'invalid build state');
+  if (record.build.state === 'completed') {
+    assert(COMPLETED_CONCLUSIONS.has(record.build.conclusion), 'invalid workflow conclusion');
+  } else {
+    assert(record.build.conclusion === null, 'unfinished workflow cannot have a conclusion');
+  }
   assert(typeof record.build.runUrl === 'string' && record.build.runUrl.length > 0, 'invalid build run URL');
   assert(record.published && ['complete', 'pair_incomplete'].includes(record.published.state), 'invalid publication state');
   assert(QUALIFICATIONS.has(record.qualification), 'invalid qualification');
@@ -127,12 +150,23 @@ export function validateStatusRecord(record) {
 export function formatCardStatus(record) {
   validateStatusRecord(record);
   const pairIncomplete = record.published.state === 'pair_incomplete';
-  const label = pairIncomplete ? 'Pair incomplete' : ({
-    success: 'Passing', failure: 'Failed', cancelled: 'Cancelled',
-  }[record.build.conclusion] ?? 'Running');
-  const tone = pairIncomplete ? 'warning' : ({
-    success: 'success', failure: 'danger', cancelled: 'warning',
-  }[record.build.conclusion] ?? 'warning');
+  let label = 'Running';
+  let tone = 'warning';
+  if (pairIncomplete) {
+    label = 'Pair incomplete';
+  } else if (record.build.conclusion === 'success') {
+    label = 'Passing';
+    tone = 'success';
+  } else if (FAILURE_CONCLUSIONS.has(record.build.conclusion)) {
+    label = 'Failed';
+    tone = 'danger';
+  } else if (record.build.conclusion === 'cancelled') {
+    label = 'Cancelled';
+  } else if (record.build.conclusion === 'neutral') {
+    label = 'Neutral';
+  } else if (record.build.conclusion === 'skipped') {
+    label = 'Skipped';
+  }
   return {
     buildLabel: label,
     buildTone: tone,
