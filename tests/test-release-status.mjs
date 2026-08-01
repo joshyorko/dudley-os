@@ -26,6 +26,19 @@ function run(overrides = {}) {
   return { status: 'completed', conclusion: 'success', html_url: 'https://github.test/runs/10', ...overrides };
 }
 
+function dakotaFallback() {
+  const complete = buildStatusRecord({
+    name: 'dakota', stream: streams.dakota, run: run(),
+    images: streams.dakota.status.imageRefs.map((imageRef) => image(imageRef)),
+    checkedAt: '2026-08-01T16:35:00Z',
+  });
+  return buildStatusRecord({
+    name: 'dakota', stream: streams.dakota, run: run(),
+    images: [image(streams.dakota.status.imageRefs[0])], previous: complete,
+    checkedAt: '2026-08-02T16:35:00Z',
+  });
+}
+
 test('rejects invalid stream and inspection configuration', () => {
   assert.throws(() => validateStreamConfig('stable', { ...streams.stable, status: { ...streams.stable.status, qualification: 'Certified' } }));
   assert.throws(() => validateStreamConfig('stable', { ...streams.stable, status: { ...streams.stable.status, workflowFile: 'build.yaml' } }));
@@ -137,6 +150,40 @@ test('preserves the last complete Dakota pair across repeated incomplete refresh
   assert.equal(secondIncomplete.published.imageRef, 'ghcr.io/joshyorko/dudley-os:dakota');
   assert.deepEqual(secondIncomplete.published.images, complete.published.images);
 });
+
+for (const [name, mutate] of [
+  ['one image', (published) => ({ ...published, images: [published.images[0]] })],
+  ['extra image', (published) => ({ ...published, images: [...published.images, image('ghcr.io/joshyorko/dudley-os:nvidia')] })],
+  ['mismatched revisions', (published) => ({ ...published, images: [published.images[0], { ...published.images[1], revision: 'b'.repeat(40) }] })],
+  ['primary image reference', (published) => ({ ...published, imageRef: 'ghcr.io/joshyorko/dudley-os:dakota-nvidia' })],
+  ['primary digest', (published) => ({ ...published, digest: `sha256:${'b'.repeat(64)}` })],
+  ['primary timestamp', (published) => ({ ...published, at: '2026-08-01T16:31:00Z' })],
+]) {
+  test(`rejects incomplete-pair fallback with inconsistent ${name}`, () => {
+    const fallback = dakotaFallback();
+    assert.throws(
+      () => validateStatusRecord({ ...fallback, published: mutate(fallback.published) }),
+    );
+  });
+}
+
+for (const [name, selectImages] of [
+  ['wrong reference', ([primary]) => [primary, image('ghcr.io/joshyorko/dudley-os:nvidia')]],
+  ['missing reference', ([primary]) => [primary]],
+  ['extra reference', ([primary, secondary]) => [primary, secondary, image('ghcr.io/joshyorko/dudley-os:nvidia')]],
+  ['reordered references', ([primary, secondary]) => [secondary, primary]],
+]) {
+  test(`rejects fallback with ${name}`, () => {
+    const fallback = dakotaFallback();
+    const images = selectImages(fallback.published.images);
+    const previous = { ...fallback, published: { ...fallback.published, imageRef: images[0].imageRef, digest: images[0].digest, at: images[0].at, images } };
+    assert.throws(() => buildStatusRecord({
+      name: 'dakota', stream: streams.dakota, run: run(),
+      images: [image(streams.dakota.status.imageRefs[0])], previous,
+      checkedAt: '2026-08-03T16:35:00Z',
+    }));
+  });
+}
 
 test('marks a first incomplete Dakota pair as unpublished', () => {
   const record = buildStatusRecord({

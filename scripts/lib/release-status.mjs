@@ -75,6 +75,25 @@ function completePublication(images) {
   };
 }
 
+function validatePrimaryPublicationFields(published) {
+  const primary = published.images[0];
+  assert(published.imageRef === primary.imageRef, 'published image reference must match primary image');
+  assert(published.digest === primary.digest, 'published digest must match primary image');
+  assert(published.at === primary.at, 'published timestamp must match primary image');
+}
+
+function validateConfiguredFallback(published, imageRefs) {
+  assert(published.images.length === imageRefs.length, 'fallback must contain every configured image');
+  assert(
+    published.images.every((image, index) => image.imageRef === imageRefs[index]),
+    'fallback images must match configured order',
+  );
+  assert(
+    published.images.every((image) => image.revision === published.images[0].revision),
+    'fallback images must share a revision',
+  );
+}
+
 function incompletePublication(imageRef, previous) {
   if (
     ['complete', 'pair_incomplete'].includes(previous?.published?.state)
@@ -103,6 +122,9 @@ export function buildStatusRecord({ name, stream, run, images, previous, checked
     configuredImages.length === 2
     && configuredImages[0].revision === configuredImages[1].revision
   );
+  if (!completePair && previous?.published?.images.length > 0) {
+    validateConfiguredFallback(previous.published, imageRefs);
+  }
   const published = completePair
     ? completePublication(configuredImages)
     : incompletePublication(imageRefs[0], previous);
@@ -137,12 +159,24 @@ export function validateStatusRecord(record) {
     assert(IMAGE_REF.test(record.published.imageRef), 'invalid published image reference');
     assert(Array.isArray(record.published.images) && record.published.images.length > 0, 'published images are required');
     record.published.images.forEach(validateImage);
+    validatePrimaryPublicationFields(record.published);
   } else {
-    assert(record.published.at === null || validTimestamp(record.published.at), 'invalid incomplete published timestamp');
-    assert(record.published.digest === null || DIGEST.test(record.published.digest), 'invalid incomplete published digest');
     assert(IMAGE_REF.test(record.published.imageRef), 'invalid incomplete image reference');
     assert(Array.isArray(record.published.images), 'invalid incomplete images');
-    record.published.images.forEach(validateImage);
+    const isUnpublished = record.published.at === null
+      && record.published.digest === null
+      && record.published.images.length === 0;
+    if (!isUnpublished) {
+      assert(validTimestamp(record.published.at), 'invalid incomplete published timestamp');
+      assert(DIGEST.test(record.published.digest), 'invalid incomplete published digest');
+      assert(record.published.images.length === 2, 'incomplete fallback must contain a complete pair');
+      record.published.images.forEach(validateImage);
+      assert(
+        record.published.images[0].revision === record.published.images[1].revision,
+        'incomplete fallback images must share a revision',
+      );
+      validatePrimaryPublicationFields(record.published);
+    }
   }
   return record;
 }
