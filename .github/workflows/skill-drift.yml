@@ -11,7 +11,37 @@ permissions:
 
 jobs:
   skill-drift:
-    uses: projectbluefin/actions/.github/workflows/skill-drift-check.yml@9623ba6a5577ad1221d76a223c9dacbd9043bd04 # v1
-    with:
-      code-paths: '[".github/workflows/**", "build/**", "Containerfile", "Justfile", "tests/**"]'
-      skill-paths: '["AGENTS.md", "README.md", "docs/**", ".github/skills/**"]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Require documentation for implementation changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          changed=$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")
+          code_changed=false
+          docs_changed=false
+
+          while IFS= read -r path; do
+            case "${path}" in
+              .github/workflows/*|build/*|Containerfile|Containerfile.*|Justfile|tests/*)
+                code_changed=true
+                ;;
+            esac
+            case "${path}" in
+              AGENTS.md|README.md|docs/*|.github/skills/*)
+                docs_changed=true
+                ;;
+            esac
+          done <<< "${changed}"
+
+          if [[ "${code_changed}" == true && "${docs_changed}" != true ]]; then
+            echo "Implementation changed without a matching documentation update." >&2
+            exit 1
+          fi
