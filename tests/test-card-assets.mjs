@@ -60,6 +60,10 @@ function elementWithText(element, text) {
   return undefined;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 test('stream manifest has the approved public streams', () => {
   assert.deepEqual(Object.keys(streams).sort(), ['dakota', 'nvidia', 'stable']);
   for (const [key, expectedStream] of Object.entries(expected)) {
@@ -92,15 +96,19 @@ test('README publishes every stream as a linked live card', async () => {
   };
   for (const [name, stream] of Object.entries(expected)) {
     assert.ok(readme.includes(stream.switchCommand), `README omits ${name} switch command`);
-    for (const theme of ['light', 'dark']) {
-      assert.ok(
-        readme.includes(`https://joshyorko.github.io/dudley-os/cards/${name}-${theme}.png`),
-        `README omits ${name} ${theme} live card`,
-      );
-    }
-    assert.ok(
-      readme.includes(`https://github.com/joshyorko/dudley-os/actions/workflows/${liveCards[name]}`),
-      `README omits ${name} card workflow link`,
+    const workflow = `https://github.com/joshyorko/dudley-os/actions/workflows/${liveCards[name]}`;
+    const darkCard = `https://joshyorko.github.io/dudley-os/cards/${name}-dark.png`;
+    const lightCard = `https://joshyorko.github.io/dudley-os/cards/${name}-light.png`;
+    assert.match(
+      readme,
+      new RegExp(
+        `<a href="${escapeRegExp(workflow)}">\\s*`
+        + `<picture>\\s*`
+        + `<source media="\\(prefers-color-scheme: dark\\)" srcset="${escapeRegExp(darkCard)}">\\s*`
+        + `<img src="${escapeRegExp(lightCard)}" alt="Dudley ${name} release card" width="800">\\s*`
+        + `</picture>\\s*</a>`,
+      ),
+      `README does not wrap the complete ${name} card in its workflow link`,
     );
   }
 });
