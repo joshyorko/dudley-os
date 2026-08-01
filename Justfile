@@ -166,11 +166,6 @@ build-dakota:
 
     CONTAINERFILE=./Containerfile.dakota "{{ just }}" build "dudley-os" "dakota"
 
-# Build the Dakota container image and its correctly targeted installer ISO
-[group('Build Virtal Machine Image')]
-build-dakota-iso: build-dakota
-    env -u SSH_ASKPASS {{ just }} _build-bib localhost/dudley-os dakota iso iso/dakota.toml
-
 # Build the image for GitHub Actions in rootful container storage
 [group('Image')]
 build-ghcr $target_image=image_name $tag=default_tag:

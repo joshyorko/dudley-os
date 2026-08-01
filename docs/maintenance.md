@@ -33,10 +33,14 @@ changing final assembly.
 | --- | --- | --- |
 | Stable | `.github/workflows/build.yml` | `Containerfile` on the Project Bluefin Stable base, with the pinned `dsb-common` OCI resource. |
 | Nvidia | `.github/workflows/build-nvidia.yml` | `Containerfile` with the workflow's pinned `NVIDIA_BASE_IMAGE_REF` for Project Bluefin Nvidia. |
-| Dakota | `.github/workflows/build-dakota.yml` | `Containerfile.dakota` with the workflow's pinned `DAKOTA_BASE_IMAGE_REF` for a file-only Project Bluefin Dakota overlay. |
+| Dakota | `.github/workflows/build-dakota.yml` | `Containerfile.dakota` with pinned matrix inputs for matching `dakota` and `dakota-nvidia` file-only overlays. |
 
 Dakota is experimental and does not claim the Fedora, Chrome, or DX parity of
 the Stable and Nvidia streams.
+
+Installer-media assembly belongs to `joshyorko/dudley-iso`. Keep both Dakota
+tags available there: the live environment embeds `dakota-nvidia`, while the
+installer selects `dakota` on non-NVIDIA hardware.
 
 ## Validation workflows
 

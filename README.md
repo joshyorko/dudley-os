@@ -34,7 +34,9 @@ NVIDIA is the daily-driver stream for systems that need Project Bluefin's NVIDIA
 sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpolicy
 ```
 
-Dakota is experimental. It is a narrow file-only overlay and still requires boot, update, and rollback qualification before daily-driver use.
+Dakota is experimental. It publishes matching `dakota` and `dakota-nvidia`
+images for the offline installer and still requires boot, install, update, and
+rollback qualification before daily-driver use.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/dakota-dark.png">
@@ -94,7 +96,7 @@ Dakota uses the same ownership boundaries but applies only its allowlisted file 
 
 ## Build, trust, and release
 
-Renovate pins image and action dependencies by digest. Project Bluefin Actions handles runner setup, preflight, image push, keyless signing, and GitHub provenance. Pushes to `main` publish Stable, NVIDIA, and Dakota. CI SBOM publication is disabled.
+Renovate pins image and action dependencies by digest. Project Bluefin Actions handles runner setup, preflight, image push, keyless signing, and GitHub provenance. Pushes to `main` publish Stable, NVIDIA, Dakota, and Dakota NVIDIA. CI SBOM publication is disabled.
 
 Verify the published Stable image against this repository's GitHub Actions OIDC identity:
 
@@ -124,13 +126,16 @@ just build-qcow2
 just run-vm-qcow2
 ```
 
-Build the experimental Dakota container and its correctly targeted installer ISO in one command:
+Build the experimental Dakota container image locally:
 
 ```bash
-just build-dakota-iso
+just build-dakota
 ```
 
-The installer is written to `output/bootiso/install.iso`. Dakota still requires boot, update, and rollback qualification before daily-driver use.
+The matching offline installer is owned by
+[`joshyorko/dudley-iso`](https://github.com/joshyorko/dudley-iso) and is built
+there with `just iso-sd-boot dudley`. Dakota still requires boot, install,
+update, and rollback qualification before daily-driver use.
 
 ## Repository map
 
