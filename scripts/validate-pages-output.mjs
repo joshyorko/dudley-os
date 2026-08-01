@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +9,8 @@ const streams = ['stable', 'nvidia', 'dakota'];
 const themes = ['light', 'dark'];
 const cardNames = streams.flatMap((stream) => themes.map((theme) => `${stream}-${theme}.png`));
 const statusNames = streams.map((stream) => `${stream}.json`);
+const hashFields = ['input', 'light', 'dark'];
+const sha256 = /^[0-9a-f]{64}$/;
 
 function isInside(root, candidate) {
   return candidate === root || candidate.startsWith(`${root}${path.sep}`);
@@ -34,6 +37,29 @@ function validateEntries(actual, expected, label) {
   }
 }
 
+function validateExactKeys(value, expected, label) {
+  const actual = value && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value).sort() : [];
+  if (actual.join(',') !== [...expected].sort().join(',')) throw new Error(`Invalid ${label}`);
+}
+
+async function loadCardHashes(filename) {
+  let hashes;
+  try {
+    hashes = JSON.parse(await readFile(filename, 'utf8'));
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new Error('Invalid card hash manifest JSON', { cause: error });
+    throw error;
+  }
+  validateExactKeys(hashes, streams, 'card hash manifest streams');
+  for (const stream of streams) {
+    validateExactKeys(hashes[stream], hashFields, `${stream} card hash fields`);
+    for (const field of hashFields) {
+      if (!sha256.test(hashes[stream][field])) throw new Error(`${stream}.${field} must be lowercase 64-hex`);
+    }
+  }
+  return hashes;
+}
+
 export async function validatePagesOutput(artifactRoot) {
   if (typeof artifactRoot !== 'string' || artifactRoot.length === 0) throw new TypeError('Artifact root is required');
   const resolvedRoot = path.resolve(artifactRoot);
@@ -48,19 +74,21 @@ export async function validatePagesOutput(artifactRoot) {
   const cardsDirectory = await validatePath(root, path.join(root, 'cards'), 'cards', 'directory');
   const statusDirectory = await validatePath(root, path.join(root, 'status'), 'status', 'directory');
   const cardEntries = (await readdir(cardsDirectory)).sort();
-  const hasHashSidecar = cardEntries.includes('card-hashes.json');
-  validateEntries(cardEntries, hasHashSidecar ? [...cardNames, 'card-hashes.json'] : cardNames, 'card image');
+  validateEntries(cardEntries, [...cardNames, 'card-hashes.json'], 'card image');
   const statusEntries = (await readdir(statusDirectory)).sort();
   validateEntries(statusEntries, statusNames, 'status record');
+  const hashFilename = await validatePath(root, path.join(cardsDirectory, 'card-hashes.json'), 'cards/card-hashes.json', 'file');
+  const cardHashes = await loadCardHashes(hashFilename);
 
   await Promise.all(cardNames.map(async (name) => {
     const filename = await validatePath(root, path.join(cardsDirectory, name), `cards/${name}`, 'file');
-    const image = PNG.sync.read(await readFile(filename));
+    const contents = await readFile(filename);
+    const image = PNG.sync.read(contents);
     if (image.width !== 1600 || image.height !== 760) throw new Error(`${name} must be 1600x760`);
+    const [stream, theme] = name.slice(0, -'.png'.length).split('-');
+    const digest = createHash('sha256').update(contents).digest('hex');
+    if (cardHashes[stream][theme] !== digest) throw new Error(`${name} digest does not match card-hashes.json`);
   }));
-  if (hasHashSidecar) {
-    await validatePath(root, path.join(cardsDirectory, 'card-hashes.json'), 'cards/card-hashes.json', 'file');
-  }
 
   await Promise.all(streams.map(async (stream) => {
     const name = `${stream}.json`;
