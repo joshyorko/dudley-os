@@ -34,9 +34,7 @@ NVIDIA is the daily-driver stream for systems that need Project Bluefin's NVIDIA
 sudo bootc switch ghcr.io/joshyorko/dudley-os:nvidia --enforce-container-sigpolicy
 ```
 
-Dakota is experimental. It publishes matching `dakota` and `dakota-nvidia`
-images for the offline installer and still requires boot, install, update, and
-rollback qualification before daily-driver use.
+Dakota is experimental. It publishes matching `dakota` and `dakota-nvidia` images for the offline installer and still requires boot, update, and rollback qualification, plus a completed installer test, before daily-driver use.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="static/img/cards/dakota-dark.png">
