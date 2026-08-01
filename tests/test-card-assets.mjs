@@ -46,12 +46,23 @@ test('stream manifest has the approved public streams', () => {
   assert.deepEqual(Object.keys(streams).sort(), ['dakota', 'nvidia', 'stable']);
   for (const [key, expectedStream] of Object.entries(expected)) {
     assert.deepEqual(Object.keys(streams[key]).sort(), [
-      'accent', 'description', 'imageRef', 'mascot', 'switchCommand', 'tag', 'title',
+      'accent', 'description', 'imageRef', 'mascot', 'status', 'switchCommand', 'tag', 'title',
     ]);
     assert.equal(streams[key].imageRef, expectedStream.imageRef);
     assert.equal(streams[key].tag, expectedStream.tag);
     assert.equal(streams[key].switchCommand, expectedStream.switchCommand);
   }
+  assert.deepEqual(streams.stable.status, {
+    qualification: 'Daily driver', workflowFile: 'build.yml', imageRefs: ['ghcr.io/joshyorko/dudley-os:stable'],
+  });
+  assert.deepEqual(streams.nvidia.status, {
+    qualification: 'Daily driver', workflowFile: 'build-nvidia.yml', imageRefs: ['ghcr.io/joshyorko/dudley-os:nvidia'],
+  });
+  assert.deepEqual(streams.dakota.status, {
+    qualification: 'Experimental', workflowFile: 'build-dakota.yml', imageRefs: [
+      'ghcr.io/joshyorko/dudley-os:dakota', 'ghcr.io/joshyorko/dudley-os:dakota-nvidia',
+    ],
+  });
 });
 
 test('README publishes every stream switch command and card theme', async () => {
