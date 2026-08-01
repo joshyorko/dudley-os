@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
-ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:42@sha256:e78cd1a688cd079c23864f289a89a49a3f4ad66d817864e325e1d058310ee95c"
+ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:45@sha256:dcff4023668e2e3ca37867f61ab9e124131cdae69e61411e56d4b0c8fee82ead"
 
 FROM ${CHROME_BUILDER_REF} AS google-chrome
 RUN dnf install -y cpio curl rpm && \
