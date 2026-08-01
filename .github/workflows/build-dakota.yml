@@ -18,8 +18,6 @@ env:
   IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   IMAGE_NAME: "${{ github.event.repository.name }}"
-  DEFAULT_TAG: "dakota"
-  DAKOTA_BASE_IMAGE_REF: "ghcr.io/projectbluefin/dakota:stable@sha256:5989c44875101aaf8928f36360c8434f90ca485cb67d07ec07d7196c44a61f6c"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
@@ -28,8 +26,18 @@ concurrency:
 
 jobs:
   build_push_dakota:
-    name: Build and push Dakota image
+    name: Build and push ${{ matrix.tag }} image
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # The Dudley installer embeds the NVIDIA image and selects the normal
+        # image on non-NVIDIA hardware, so both tags are one release contract.
+        include:
+          - tag: dakota
+            base_image_ref: "ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
+          - tag: dakota-nvidia
+            base_image_ref: "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:b1615f9e1feb9fc28f0141c38e932950382e7841eebbf16c1fbd8b92e80e49f2"
     permissions:
       contents: read
       packages: write
@@ -63,17 +71,17 @@ jobs:
         id: metadata
         with:
           tags: |
-            type=raw,value=dakota
-            type=raw,value=dakota.{{date 'YYYYMMDD'}}
-            type=raw,value={{date 'YYYYMMDD'}}-dakota
-            type=ref,event=pr,prefix=dakota-pr-
-            type=sha,prefix=dakota-sha-
+            type=raw,value=${{ matrix.tag }}
+            type=raw,value=${{ matrix.tag }}.{{date 'YYYYMMDD'}}
+            type=raw,value={{date 'YYYYMMDD'}}-${{ matrix.tag }}
+            type=ref,event=pr,prefix=${{ matrix.tag }}-pr-
+            type=sha,prefix=${{ matrix.tag }}-sha-
           labels: |
             org.opencontainers.image.created=${{ steps.date.outputs.date }}
             org.opencontainers.image.description=${{ env.IMAGE_DESC }}
             org.opencontainers.image.source=https://github.com/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/blob/${{ github.sha }}/Containerfile.dakota
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
-            org.opencontainers.image.version=${{ env.DEFAULT_TAG }}.{{date 'YYYYMMDD'}}
+            org.opencontainers.image.version=${{ matrix.tag }}.{{date 'YYYYMMDD'}}
             io.artifacthub.package.keywords=${{ env.IMAGE_KEYWORDS }}
             containers.bootc=1
           sep-tags: " "
@@ -86,12 +94,12 @@ jobs:
         run: |
           set -euo pipefail
           export CONTAINERFILE=./Containerfile.dakota
-          export BASE_IMAGE_REF="${DAKOTA_BASE_IMAGE_REF}"
+          export BASE_IMAGE_REF="${{ matrix.base_image_ref }}"
           export METADATA_IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAME}"
-          export FINAL_IMAGE_REF="${IMAGE_REGISTRY}/${IMAGE_NAME}:dakota"
-          sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${DEFAULT_TAG}"
+          export FINAL_IMAGE_REF="${IMAGE_REGISTRY}/${IMAGE_NAME}:${{ matrix.tag }}"
+          sudo -E "$(command -v just)" build-ghcr "${IMAGE_NAME}" "${{ matrix.tag }}"
           echo "image=${IMAGE_NAME}" >> "${GITHUB_OUTPUT}"
-          echo "tags=${DEFAULT_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "tags=${{ matrix.tag }}" >> "${GITHUB_OUTPUT}"
       - name: Push To GHCR
         id: push
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
@@ -99,7 +107,7 @@ jobs:
         with:
           image-name: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
-          default-tag: ${{ env.DEFAULT_TAG }}
+          default-tag: ${{ matrix.tag }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Sign image and publish provenance
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)

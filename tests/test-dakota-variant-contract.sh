@@ -35,29 +35,30 @@ if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' Containerfile.dakota build/1
     echo 'FAIL: Dakota assembly must not invoke dnf or dnf5' >&2
     exit 1
 fi
-grep -Fq 'DEFAULT_TAG: "dakota"' .github/workflows/build-dakota.yml
 grep -Fq 'CONTAINERFILE=./Containerfile.dakota' .github/workflows/build-dakota.yml
 grep -Fq 'ghcr.io/projectbluefin/dakota:stable@sha256:' .github/workflows/build-dakota.yml
+grep -Fq 'ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:' .github/workflows/build-dakota.yml
 grep -Fq 'projectbluefin/actions/bootc-build/sign-and-publish@' .github/workflows/build-dakota.yml
-grep -Fq 'type=raw,value=dakota' .github/workflows/build-dakota.yml
+# shellcheck disable=SC2016
+grep -Fq 'type=raw,value=${{ matrix.tag }}' .github/workflows/build-dakota.yml
 grep -Fq 'type=sha' .github/workflows/build-dakota.yml
 
 python3 - <<'PY'
 import json
 import re
-import tomllib
 from pathlib import Path
 
 import yaml
 
 workflow = yaml.safe_load(Path('.github/workflows/build-dakota.yml').read_text())
-assert workflow['env']['DEFAULT_TAG'] == 'dakota'
-dakota_iso_path = Path('iso/dakota.toml')
-assert dakota_iso_path.is_file(), 'Dakota must have a dedicated installer configuration'
-dakota_iso = tomllib.loads(dakota_iso_path.read_text())
-kickstart = dakota_iso['customizations']['installer']['kickstart']['contents']
-assert 'ghcr.io/joshyorko/dudley-os:dakota' in kickstart
-assert 'ghcr.io/joshyorko/dudley-os:stable' not in kickstart
+variants = workflow['jobs']['build_push_dakota']['strategy']['matrix']['include']
+assert {(item['tag'], item['base_image_ref'].split('@', 1)[0]) for item in variants} == {
+    ('dakota', 'ghcr.io/projectbluefin/dakota:stable'),
+    ('dakota-nvidia', 'ghcr.io/projectbluefin/dakota-nvidia:stable'),
+}
+assert not Path('iso/dakota.toml').exists(), (
+    'Dakota live-media assembly belongs to joshyorko/dudley-iso'
+)
 cards_workflow = yaml.safe_load(Path('.github/workflows/validate-cards.yml').read_text())
 cards_steps = cards_workflow['jobs']['validate']['steps']
 assert cards_steps[0]['uses'] == 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
@@ -72,12 +73,16 @@ assert any(
     )
     for manager in renovate['customManagers']
 )
+assert any(
+    any('build-dakota' in pattern for pattern in manager.get('managerFilePatterns', []))
+    and any('dakota(?:-nvidia)?' in match for match in manager.get('matchStrings', []))
+    for manager in renovate['customManagers']
+), 'Renovate must pin both Dakota workflow base images'
 PY
 
-dakota_iso_plan=$(just --dry-run build-dakota-iso 2>&1)
-grep -Fq 'CONTAINERFILE=./Containerfile.dakota' <<<"${dakota_iso_plan}"
-grep -Fq 'build "dudley-os" "dakota"' <<<"${dakota_iso_plan}"
-grep -Fq 'env -u SSH_ASKPASS' <<<"${dakota_iso_plan}"
-grep -Fq '_build-bib localhost/dudley-os dakota iso iso/dakota.toml' <<<"${dakota_iso_plan}"
+if just --list 2>&1 | grep -Fq 'build-dakota-iso'; then
+    echo 'FAIL: Dakota ISO assembly belongs to joshyorko/dudley-iso' >&2
+    exit 1
+fi
 
 echo 'PASS: Dakota variant assembly and publish contract is present'
