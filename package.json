@@ -10,7 +10,7 @@
     "cards": "node scripts/generate-card-images.mjs",
     "cards:check": "node scripts/generate-card-images.mjs --check",
     "test:cards": "node --test tests/test-card-assets.mjs",
-    "test:status": "node --test tests/test-release-status.mjs"
+    "test:status": "node --test tests/test-release-status.mjs tests/test-status-collector.mjs"
   },
   "devDependencies": {
     "@fontsource/inter": "5.3.0",
