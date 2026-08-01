@@ -31,8 +31,6 @@ copy_executable() {
     install -D -m 0755 "${source}" "${destination}"
 }
 
-copy_tree /ctx/oci/dsb-common/shared/usr/share/ublue-os/just /usr/share/ublue-os/just
-
 copy_tree /ctx/oci/dsb-common/dudley/etc/dconf /etc/dconf
 copy_tree /ctx/oci/dsb-common/dudley/etc/flatpak/preinstall.d /etc/flatpak/preinstall.d
 copy_file /ctx/oci/dsb-common/dudley/etc/skel/.config/Code/User/settings.json /etc/skel/.config/Code/User/settings.json
@@ -47,19 +45,30 @@ copy_tree /ctx/oci/dsb-common/dudley/usr/share/backgrounds/dudley /usr/share/bac
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/glib-2.0/schemas /usr/share/glib-2.0/schemas
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/gnome-background-properties /usr/share/gnome-background-properties
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/ublue-os/homebrew /usr/share/ublue-os/homebrew
-copy_tree /ctx/oci/dsb-common/dudley/usr/share/ublue-os/just /usr/share/ublue-os/just
-copy_tree /ctx/oci/dsb-common/dudley/usr/share/ublue-os/user-setup.hooks.d /usr/share/ublue-os/user-setup.hooks.d \
-    --include=20-dudley-vscode-extensions.sh --include=25-dudley-theme.sh --exclude='*'
 copy_file /ctx/oci/dsb-common/dudley/usr/share/ublue-os/vscode-extensions.list /usr/share/ublue-os/vscode-extensions.list
 
 copy_tree /ctx/custom/system_files/etc/fonts/conf.d /etc/fonts/conf.d
 copy_tree /ctx/custom/system_files/usr/share/glib-2.0/schemas /usr/share/glib-2.0/schemas
 copy_tree /ctx/custom/system_files/usr/share/ublue-os/user-setup.hooks.d /usr/share/ublue-os/user-setup.hooks.d
+copy_file /ctx/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings \
+    /etc/dconf/db/distro.d/99-dudley-terminal-keybindings
+copy_executable /ctx/custom/dakota/usr/bin/dudley-podman-docker /usr/bin/dudley-podman-docker
+copy_executable /ctx/custom/dakota/usr/local/bin/docker /usr/local/bin/docker
+copy_executable \
+    /ctx/custom/dakota/usr/share/ublue-os/user-setup.hooks.d/18-dudley-podman-docker.sh \
+    /usr/share/ublue-os/user-setup.hooks.d/18-dudley-podman-docker.sh
 
-if [[ -d /ctx/custom/ujust ]]; then
-    install -d -m 0755 /usr/share/ublue-os/just
-    find /ctx/custom/ujust -type f -name '*.just' -print0 | sort -z | xargs -0r cat > /usr/share/ublue-os/just/60-custom.just
-fi
+/ctx/build/install-dakota-hooks.sh \
+    /ctx/oci/dsb-common/dudley/usr/share/ublue-os/user-setup.hooks.d \
+    /usr/share/ublue-os/user-setup.hooks.d
+
+/ctx/build/install-dakota-just.sh \
+    /ctx/oci/dsb-common/shared/usr/share/ublue-os/just \
+    /ctx/oci/dsb-common/dudley/usr/share/ublue-os/just \
+    /ctx/custom/ujust \
+    /usr/share/ublue-os/just
+
+/ctx/build/install-dakota-chrome.sh /ctx/oci/google-chrome /
 
 glib-compile-schemas /usr/share/glib-2.0/schemas
 dconf update

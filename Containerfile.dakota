@@ -1,14 +1,34 @@
 ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
+ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:42@sha256:e78cd1a688cd079c23864f289a89a49a3f4ad66d817864e325e1d058310ee95c"
+
+FROM ${CHROME_BUILDER_REF} AS google-chrome
+RUN dnf install -y cpio curl rpm && \
+    curl -fsSL -o /tmp/google-linux-signing-key.pub \
+        https://dl.google.com/linux/linux_signing_key.pub && \
+    curl -fsSL -o /tmp/google-chrome.rpm \
+        https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm && \
+    rpmkeys --import /tmp/google-linux-signing-key.pub && \
+    rpmkeys --checksig /tmp/google-chrome.rpm && \
+    install -d -m 0755 /chrome-root && \
+    cd /chrome-root && \
+    rpm2cpio /tmp/google-chrome.rpm | cpio -idm --quiet && \
+    test -x /chrome-root/opt/google/chrome/google-chrome && \
+    rm -f /tmp/google-linux-signing-key.pub /tmp/google-chrome.rpm
 
 FROM scratch AS ctx
 COPY build/10-dakota.sh /build/10-dakota.sh
+COPY build/install-dakota-chrome.sh /build/install-dakota-chrome.sh
+COPY build/install-dakota-hooks.sh /build/install-dakota-hooks.sh
+COPY build/install-dakota-just.sh /build/install-dakota-just.sh
 COPY build/20-final-metadata.sh /build/20-final-metadata.sh
 COPY custom/ujust /custom/ujust
+COPY custom/dakota /custom/dakota
 COPY custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf /custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf
 COPY custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override /custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override
 COPY custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh /custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:900b1658ba6a8fef767464be079ee68a27fe0839eacb26c2de95cf19fedcc3bb /system_files/shared /oci/dsb-common/shared
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:900b1658ba6a8fef767464be079ee68a27fe0839eacb26c2de95cf19fedcc3bb /system_files/dudley /oci/dsb-common/dudley
+COPY --from=google-chrome /chrome-root /oci/google-chrome
 
 FROM ${BASE_IMAGE_REF}
 ARG BASE_IMAGE_REF
@@ -19,5 +39,19 @@ ARG VSCODE_REFRESH_TOKEN
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build/10-dakota.sh
+
+RUN --mount=type=tmpfs,dst=/tmp \
+    google-chrome --version && \
+    ! ldd /opt/google/chrome/chrome | grep -F 'not found' && \
+    chrome_profile="$(mktemp -d)" && \
+    google-chrome \
+        --headless=new \
+        --no-sandbox \
+        --disable-gpu \
+        --disable-dev-shm-usage \
+        --no-first-run \
+        --user-data-dir="${chrome_profile}" \
+        about:blank \
+        --dump-dom 2>/dev/null | grep -F '<html'
 
 RUN bootc container lint

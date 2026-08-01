@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+source_root="$1"
+destination_root="${2:-/}"
+
+chrome_source="${source_root%/}/opt/google/chrome"
+chrome_destination="${destination_root%/}/usr/lib/opt/google/chrome"
+
+test -x "${chrome_source}/google-chrome"
+install -d -m 0755 \
+    "${chrome_destination}" \
+    "${destination_root%/}/usr/bin" \
+    "${destination_root%/}/usr/lib/tmpfiles.d" \
+    "${destination_root%/}/var/opt"
+rsync -a "${chrome_source}/" "${chrome_destination}/"
+
+for relative_path in \
+    usr/share/appdata \
+    usr/share/applications \
+    usr/share/gnome-control-center/default-apps \
+    usr/share/man/man1; do
+    if [[ -d "${source_root%/}/${relative_path}" ]]; then
+        install -d -m 0755 "${destination_root%/}/${relative_path}"
+        rsync -a \
+            "${source_root%/}/${relative_path}/" \
+            "${destination_root%/}/${relative_path}/"
+    fi
+done
+
+ln -snf /opt/google/chrome/google-chrome \
+    "${destination_root%/}/usr/bin/google-chrome"
+ln -snf /opt/google/chrome/google-chrome \
+    "${destination_root%/}/usr/bin/google-chrome-stable"
+ln -snf ../../usr/lib/opt/google "${destination_root%/}/var/opt/google"
+printf 'L /var/opt/google - - - - ../../usr/lib/opt/google\n' > \
+    "${destination_root%/}/usr/lib/tmpfiles.d/dudley-google-chrome.conf"

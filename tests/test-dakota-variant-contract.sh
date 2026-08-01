@@ -1,6 +1,118 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "${TMP_DIR}"' EXIT
+
+install -d "${TMP_DIR}/shared" "${TMP_DIR}/dudley"
+cat > "${TMP_DIR}/shared/60-custom.just" <<'EOF'
+import? "60-dudley.just"
+EOF
+cat > "${TMP_DIR}/dudley/60-dudley.just" <<'EOF'
+dudley:
+    @echo dudley
+EOF
+
+"${ROOT_DIR}/build/install-dakota-just.sh" \
+    "${TMP_DIR}/shared" \
+    "${TMP_DIR}/dudley" \
+    "${ROOT_DIR}/custom/ujust" \
+    "${TMP_DIR}/just"
+
+just --justfile "${TMP_DIR}/just/60-custom.just" --list > "${TMP_DIR}/just-list"
+grep -Fq 'dudley' "${TMP_DIR}/just-list"
+grep -Fq 'dudley-dakota' "${TMP_DIR}/just-list"
+if grep -Fq 'configure-ghostty-zsh' "${TMP_DIR}/just-list"; then
+    echo 'FAIL: Dakota must preserve its existing Ghostty/Zsh setup' >&2
+    exit 1
+fi
+grep -Fq 'install-default-apps' "${TMP_DIR}/just-list"
+
+install -d "${TMP_DIR}/ujust-bin"
+cat > "${TMP_DIR}/ujust-bin/ujust" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${DUDLEY_UJUST_LOG}"
+EOF
+chmod +x "${TMP_DIR}/ujust-bin/ujust"
+DUDLEY_UJUST_LOG="${TMP_DIR}/ujust.log" \
+PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
+    just --justfile "${TMP_DIR}/just/60-custom.just" dudley-dakota
+grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"
+grep -Fxq 'dudley dx' "${TMP_DIR}/ujust.log"
+
+install -d "${TMP_DIR}/bin"
+cat > "${TMP_DIR}/bin/podman" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*"
+EOF
+chmod +x "${TMP_DIR}/bin/podman"
+PATH="${TMP_DIR}/bin:${PATH}" \
+    "${ROOT_DIR}/custom/dakota/usr/local/bin/docker" compose version > "${TMP_DIR}/docker-output"
+grep -Fxq 'compose version' "${TMP_DIR}/docker-output"
+
+install -d "${TMP_DIR}/systemctl-bin"
+cat > "${TMP_DIR}/systemctl-bin/systemctl" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${DUDLEY_SYSTEMCTL_LOG}"
+EOF
+chmod +x "${TMP_DIR}/systemctl-bin/systemctl"
+HOME="${TMP_DIR}/home" \
+XDG_RUNTIME_DIR="/run/user/1000" \
+DUDLEY_SYSTEMCTL_LOG="${TMP_DIR}/systemctl.log" \
+PATH="${TMP_DIR}/systemctl-bin:/usr/bin:/bin" \
+    "${ROOT_DIR}/custom/dakota/usr/bin/dudley-podman-docker"
+grep -Fxq 'DOCKER_HOST=unix:///run/user/1000/podman/podman.sock' \
+    "${TMP_DIR}/home/.config/environment.d/60-dudley-podman-docker.conf"
+grep -Fxq -- '--user enable --now podman.socket' "${TMP_DIR}/systemctl.log"
+
+install -d "${TMP_DIR}/hooks-source" "${TMP_DIR}/hooks-destination"
+for hook in \
+    12-dudley-desktop-parity.sh \
+    15-dudley-bazaar-launcher.sh \
+    20-dudley-vscode-extensions.sh; do
+    printf '#!/usr/bin/env bash\n' > "${TMP_DIR}/hooks-source/${hook}"
+done
+printf '#!/usr/bin/env bash\n' > "${TMP_DIR}/hooks-source/99-fedora-only.sh"
+"${ROOT_DIR}/build/install-dakota-hooks.sh" \
+    "${TMP_DIR}/hooks-source" \
+    "${TMP_DIR}/hooks-destination"
+test "$(find "${TMP_DIR}/hooks-destination" -type f | wc -l)" -eq 3
+test ! -e "${TMP_DIR}/hooks-destination/99-fedora-only.sh"
+
+install -d "${TMP_DIR}/dconf"
+cp "${ROOT_DIR}/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings" \
+    "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+dconf compile "${TMP_DIR}/distro-db" "${TMP_DIR}/dconf"
+grep -Fq "command='/usr/bin/ghostty --gtk-single-instance=true'" \
+    "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+
+install -d \
+    "${TMP_DIR}/chrome-source/opt/google/chrome" \
+    "${TMP_DIR}/chrome-source/usr/share/applications"
+cat > "${TMP_DIR}/chrome-source/opt/google/chrome/google-chrome" <<'EOF'
+#!/usr/bin/env bash
+echo native-chrome
+EOF
+chmod +x "${TMP_DIR}/chrome-source/opt/google/chrome/google-chrome"
+cat > "${TMP_DIR}/chrome-source/usr/share/applications/google-chrome.desktop" <<'EOF'
+[Desktop Entry]
+Exec=/usr/bin/google-chrome-stable %U
+EOF
+
+"${ROOT_DIR}/build/install-dakota-chrome.sh" \
+    "${TMP_DIR}/chrome-source" \
+    "${TMP_DIR}/chrome-root"
+
+test "$("${TMP_DIR}/chrome-root/usr/lib/opt/google/chrome/google-chrome")" = \
+    'native-chrome'
+test "$(readlink "${TMP_DIR}/chrome-root/usr/bin/google-chrome-stable")" = \
+    '/opt/google/chrome/google-chrome'
+test "$(readlink "${TMP_DIR}/chrome-root/var/opt/google")" = \
+    '../../usr/lib/opt/google'
+test -f "${TMP_DIR}/chrome-root/usr/share/applications/google-chrome.desktop"
+test ! -e "${ROOT_DIR}/custom/dakota/etc/flatpak/preinstall.d/dudley-dakota.preinstall"
+
 if [[ ! -x build/10-dakota.sh ]]; then
     echo 'FAIL: Dakota assembly script must be executable in the build context' >&2
     exit 1
@@ -29,12 +141,15 @@ for command in dudley-build-info dudley-random-wallpaper dudley-theme dudley-wal
     grep -Fq "copy_executable /ctx/oci/dsb-common/dudley/usr/bin/${command} /usr/bin/${command}" build/10-dakota.sh
 done
 # shellcheck disable=SC2251
-! grep -Eq '10-build\.sh|15-dx\.sh|google-chrome|rpm-ostree' Containerfile.dakota build/10-dakota.sh
-if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' Containerfile.dakota build/10-dakota.sh |
+! grep -Eq '10-build\.sh|15-dx\.sh|rpm-ostree' Containerfile.dakota build/10-dakota.sh
+if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |
     grep -Eq '(^|[[:space:];|&/])(dnf|dnf5)([[:space:]]|$)'; then
-    echo 'FAIL: Dakota assembly must not invoke dnf or dnf5' >&2
+    echo 'FAIL: the final Dakota image assembly must not invoke dnf or dnf5' >&2
     exit 1
 fi
+grep -Eq '^ARG CHROME_BUILDER_REF="registry\.fedoraproject\.org/fedora:42@sha256:[a-f0-9]{64}"$' Containerfile.dakota
+grep -Fq 'rpmkeys --checksig /tmp/google-chrome.rpm' Containerfile.dakota
+grep -Fq 'COPY --from=google-chrome /chrome-root /oci/google-chrome' Containerfile.dakota
 grep -Fq 'CONTAINERFILE=./Containerfile.dakota' .github/workflows/build-dakota.yml
 grep -Fq 'ghcr.io/projectbluefin/dakota:stable@sha256:' .github/workflows/build-dakota.yml
 grep -Fq 'ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:' .github/workflows/build-dakota.yml

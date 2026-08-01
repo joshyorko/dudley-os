@@ -35,8 +35,12 @@ changing final assembly.
 | Nvidia | `.github/workflows/build-nvidia.yml` | `Containerfile` with the workflow's pinned `NVIDIA_BASE_IMAGE_REF` for Project Bluefin Nvidia. |
 | Dakota | `.github/workflows/build-dakota.yml` | `Containerfile.dakota` with pinned matrix inputs for matching `dakota` and `dakota-nvidia` file-only overlays. |
 
-Dakota is experimental and does not claim the Fedora, Chrome, or DX parity of
-the Stable and Nvidia streams.
+Dakota is experimental and does not carry Fedora RPM or Docker-daemon parity
+with the Stable and Nvidia streams. Its product glue maps the Dudley contract
+to Dakota-native components: Ghostty, Podman with a Docker CLI compatibility
+command and user API socket, signature-verified native Chrome extracted in a
+disposable Fedora builder stage, and Homebrew-delivered developer tools and VS
+Code Insiders. RPM and DNF do not enter the final Dakota image.
 
 Installer-media assembly belongs to `joshyorko/dudley-iso`. Keep both Dakota
 tags available there: the live environment embeds `dakota-nvidia`, while the

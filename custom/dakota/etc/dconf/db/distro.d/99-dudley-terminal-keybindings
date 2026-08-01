@@ -1,0 +1,5 @@
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+command='/usr/bin/ghostty --gtk-single-instance=true'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
+command='/usr/bin/ghostty --gtk-single-instance=true'
