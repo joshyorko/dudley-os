@@ -45,6 +45,7 @@ test-unit:
     bash tests/test-dakota-variant-contract.sh
     bash tests/test-nvidia-variant-contract.sh
     bash tests/test-publish-workflow-contract.sh
+    bash tests/test-skill-drift-contract.sh
     npm run test:cards
 
 # Run validation and unit tests
