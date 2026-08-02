@@ -68,6 +68,8 @@ The central `joshyorko/renovate-config` runner manages updates. Keep
 repository-specific matching and grouping in `.github/renovate.json5`; do not
 add a repository-local Renovate workflow. Renovate updates the pinned OCI
 image references and action versions so builds remain reproducible.
+Patchraptor dependency PRs pass the skill-drift check without requiring a
+documentation-only change; all other implementation PRs retain that gate.
 
 ## Publishing, signing, and provenance
 
