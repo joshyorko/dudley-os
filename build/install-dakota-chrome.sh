@@ -37,6 +37,15 @@ for command in xdg-desktop-menu xdg-icon-resource xdg-mime xdg-settings; do
     fi
 done
 
+for size in 16 24 32 48 64 128 256; do
+    install -D -m 0644 \
+        "${chrome_source}/product_logo_${size}.png" \
+        "${destination_root%/}/usr/share/icons/hicolor/${size}x${size}/apps/google-chrome.png"
+done
+
+gtk-update-icon-cache -f -t \
+    "${destination_root%/}/usr/share/icons/hicolor"
+
 ln -snf /opt/google/chrome/google-chrome \
     "${destination_root%/}/usr/bin/google-chrome"
 ln -snf /opt/google/chrome/google-chrome \

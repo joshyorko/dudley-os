@@ -168,6 +168,8 @@ VERSION_ID=46
 VARIANT_ID=dakota
 NAME="Dakota"
 PRETTY_NAME="Dakota"
+IMAGE_REF="ostree-image-signed:docker://ghcr.io/projectbluefin/dakota"
+IMAGE_TAG="latest"
 EOF
 
 DUDLEY_STREAM=dakota \
@@ -185,6 +187,8 @@ DUDLEY_STREAM=dakota \
 for expected in 'ID=dakota' 'ID_LIKE="gnomeos"' 'VERSION_ID=46' 'VARIANT_ID="dakota"'; do
 	grep -Fxq "$expected" "$DAKOTA_OS_RELEASE_FILE" || { echo "FAIL: Dakota inherited os-release value changed: $expected" >&2; exit 1; }
 done
+grep -Fxq 'IMAGE_REF="ostree-image-signed:docker://ghcr.io/joshyorko/dudley-os"' "$DAKOTA_OS_RELEASE_FILE"
+grep -Fxq 'IMAGE_TAG="dakota"' "$DAKOTA_OS_RELEASE_FILE"
 jq -e '."image-name" == "dudley-os" and ."image-tag" == "dakota" and ."image-flavor" == "dakota" and .stream == "dakota" and ."base-distribution" == "dakota" and ."base-image-ref" == "ghcr.io/projectbluefin/dakota:stable@sha256:abc123" and has("fedora-version") | not' "$DAKOTA_IMAGE_INFO_PATH" >/dev/null
 
 echo "PASS: Dudley final metadata preserves Project Bluefin runtime contracts"
