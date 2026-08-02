@@ -35,12 +35,13 @@ changing final assembly.
 | Nvidia | `.github/workflows/build-nvidia.yml` | `Containerfile` with the workflow's pinned `NVIDIA_BASE_IMAGE_REF` for Project Bluefin Nvidia. |
 | Dakota | `.github/workflows/build-dakota.yml` | `Containerfile.dakota` with pinned matrix inputs for matching `dakota` and `dakota-nvidia` file-only overlays. |
 
-Dakota is experimental and does not carry Fedora RPM or Docker-daemon parity
-with the Stable and Nvidia streams. Its product glue maps the Dudley contract
-to Dakota-native components: Ghostty, Podman with a Docker CLI compatibility
-command and user API socket, signature-verified native Chrome extracted in a
-disposable Fedora builder stage, and Homebrew-delivered developer tools and VS
-Code Insiders. RPM and DNF do not enter the final Dakota image.
+Dakota is experimental and does not carry Fedora RPM parity with the Stable and
+Nvidia streams. Its product glue maps the Dudley contract to Dakota-native
+components: Ghostty, native Podman, the real Docker Engine with Compose and
+Buildx copied from a pinned upstream Docker image, signature-verified native
+Chrome extracted in a disposable Fedora builder stage, and Homebrew-delivered
+developer tools and VS Code Insiders. RPM and DNF do not enter the final Dakota
+image.
 
 Publish Dakota images with standard `zstd` compression. Do not use
 `zstd:chunked`: Dakota's composefs updater rejects those images with

@@ -33,11 +33,10 @@ relied on as a daily driver.
 
 ## Finish Dakota setup
 
-Dakota is built from source rather than from Fedora packages. Podman is the
-container engine; `docker` is a compatibility command that forwards to Podman,
-not a Docker daemon. First-login setup enables the user Podman API socket and
-publishes it as `DOCKER_HOST` for Docker-compatible SDKs and agent tooling.
-Dudley's Brewfiles and just recipes are included in the image.
+Dakota is built from source rather than from Fedora packages. Podman and the
+real Docker Engine are both included. Docker uses `/run/docker.sock`; its socket
+unit starts `dockerd` on demand. Compose and Buildx are installed as Docker CLI
+plugins. Dudley's Brewfiles and just recipes are included in the image.
 
 After first login, initialize the portable developer payload:
 
@@ -48,12 +47,7 @@ ujust dudley-dakota
 Native Google Chrome is already baked into the image. The setup command
 initializes Dakota's Bluefin CLI and Homebrew environment, installs the Dudley
 IDE bundle including VS Code Insiders, and leaves Dakota's existing
-Ghostty/Zsh/Oh My Zsh configuration untouched. To refresh only the
-Docker-compatible Podman socket configuration, run:
-
-```bash
-ujust configure-podman-docker
-```
+Ghostty/Zsh/Oh My Zsh configuration untouched.
 
 Install every formula and cask currently published by Josh's Homebrew tap:
 

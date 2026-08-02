@@ -6,7 +6,3 @@ dudley-dakota:
     set -euo pipefail
     ujust bluefin-cli
     ujust dudley dx
-
-[group('System')]
-configure-podman-docker:
-    @/usr/bin/dudley-podman-docker
