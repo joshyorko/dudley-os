@@ -52,12 +52,6 @@ copy_tree /ctx/custom/system_files/usr/share/glib-2.0/schemas /usr/share/glib-2.
 copy_tree /ctx/custom/system_files/usr/share/ublue-os/user-setup.hooks.d /usr/share/ublue-os/user-setup.hooks.d
 copy_file /ctx/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings \
     /etc/dconf/db/distro.d/99-dudley-terminal-keybindings
-copy_executable /ctx/custom/dakota/usr/bin/dudley-podman-docker /usr/bin/dudley-podman-docker
-copy_executable /ctx/custom/dakota/usr/local/bin/docker /usr/local/bin/docker
-copy_executable \
-    /ctx/custom/dakota/usr/share/ublue-os/user-setup.hooks.d/18-dudley-podman-docker.sh \
-    /usr/share/ublue-os/user-setup.hooks.d/18-dudley-podman-docker.sh
-
 /ctx/build/install-dakota-hooks.sh \
     /ctx/oci/dsb-common/dudley/usr/share/ublue-os/user-setup.hooks.d \
     /usr/share/ublue-os/user-setup.hooks.d
@@ -69,6 +63,9 @@ copy_executable \
     /usr/share/ublue-os/just
 
 /ctx/build/install-dakota-chrome.sh /ctx/oci/google-chrome /
+/ctx/build/install-dakota-docker.sh /ctx/oci/docker /
+
+systemctl enable docker.socket
 
 glib-compile-schemas /usr/share/glib-2.0/schemas
 dconf update

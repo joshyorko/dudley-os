@@ -23,6 +23,10 @@ EOF
 just --justfile "${TMP_DIR}/just/60-custom.just" --list > "${TMP_DIR}/just-list"
 grep -Fq 'dudley' "${TMP_DIR}/just-list"
 grep -Fq 'dudley-dakota' "${TMP_DIR}/just-list"
+if grep -Fq 'configure-podman-docker' "${TMP_DIR}/just-list"; then
+    echo 'FAIL: Dakota must not configure Podman as Docker' >&2
+    exit 1
+fi
 if grep -Fq 'configure-ghostty-zsh' "${TMP_DIR}/just-list"; then
     echo 'FAIL: Dakota must preserve its existing Ghostty/Zsh setup' >&2
     exit 1
@@ -41,30 +45,40 @@ PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
 grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"
 grep -Fxq 'dudley dx' "${TMP_DIR}/ujust.log"
 
-install -d "${TMP_DIR}/bin"
-cat > "${TMP_DIR}/bin/podman" <<'EOF'
-#!/usr/bin/env bash
-printf '%s\n' "$*"
-EOF
-chmod +x "${TMP_DIR}/bin/podman"
-PATH="${TMP_DIR}/bin:${PATH}" \
-    "${ROOT_DIR}/custom/dakota/usr/local/bin/docker" compose version > "${TMP_DIR}/docker-output"
-grep -Fxq 'compose version' "${TMP_DIR}/docker-output"
+install -d \
+    "${TMP_DIR}/docker-source/usr/local/bin" \
+    "${TMP_DIR}/docker-source/usr/local/libexec/docker/cli-plugins"
+for command in containerd containerd-shim-runc-v2 ctr docker docker-init docker-proxy dockerd runc; do
+    printf '#!/usr/bin/env bash\nprintf "%s-real-docker\\n"\n' "${command}" > \
+        "${TMP_DIR}/docker-source/usr/local/bin/${command}"
+    chmod +x "${TMP_DIR}/docker-source/usr/local/bin/${command}"
+done
+for plugin in docker-buildx docker-compose; do
+    printf '#!/usr/bin/env bash\nprintf "%s-real-docker\\n"\n' "${plugin}" > \
+        "${TMP_DIR}/docker-source/usr/local/libexec/docker/cli-plugins/${plugin}"
+    chmod +x "${TMP_DIR}/docker-source/usr/local/libexec/docker/cli-plugins/${plugin}"
+done
 
-install -d "${TMP_DIR}/systemctl-bin"
-cat > "${TMP_DIR}/systemctl-bin/systemctl" <<'EOF'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >> "${DUDLEY_SYSTEMCTL_LOG}"
-EOF
-chmod +x "${TMP_DIR}/systemctl-bin/systemctl"
-HOME="${TMP_DIR}/home" \
-XDG_RUNTIME_DIR="/run/user/1000" \
-DUDLEY_SYSTEMCTL_LOG="${TMP_DIR}/systemctl.log" \
-PATH="${TMP_DIR}/systemctl-bin:/usr/bin:/bin" \
-    "${ROOT_DIR}/custom/dakota/usr/bin/dudley-podman-docker"
-grep -Fxq 'DOCKER_HOST=unix:///run/user/1000/podman/podman.sock' \
-    "${TMP_DIR}/home/.config/environment.d/60-dudley-podman-docker.conf"
-grep -Fxq -- '--user enable --now podman.socket' "${TMP_DIR}/systemctl.log"
+"${ROOT_DIR}/build/install-dakota-docker.sh" \
+    "${TMP_DIR}/docker-source" \
+    "${TMP_DIR}/docker-root"
+
+test "$("${TMP_DIR}/docker-root/usr/bin/docker")" = 'docker-real-docker'
+test "$("${TMP_DIR}/docker-root/usr/bin/dockerd")" = 'dockerd-real-docker'
+test "$("${TMP_DIR}/docker-root/usr/libexec/docker/cli-plugins/docker-compose")" = \
+    'docker-compose-real-docker'
+test -f "${TMP_DIR}/docker-root/usr/lib/systemd/system/docker.service"
+test -f "${TMP_DIR}/docker-root/usr/lib/systemd/system/docker.socket"
+test -f "${TMP_DIR}/docker-root/usr/lib/sysusers.d/dudley-docker.conf"
+grep -Fq 'ExecStart=/usr/bin/dockerd' \
+    "${TMP_DIR}/docker-root/usr/lib/systemd/system/docker.service"
+grep -Fq 'SocketGroup=docker' \
+    "${TMP_DIR}/docker-root/usr/lib/systemd/system/docker.socket"
+grep -Fxq 'g docker - -' \
+    "${TMP_DIR}/docker-root/usr/lib/sysusers.d/dudley-docker.conf"
+test ! -e "${ROOT_DIR}/custom/dakota/usr/local/bin/docker"
+test ! -e "${ROOT_DIR}/custom/dakota/usr/bin/dudley-podman-docker"
+grep -Fq 'for command in bootc ujust podman' "${ROOT_DIR}/build/10-dakota.sh"
 
 install -d "${TMP_DIR}/hooks-source" "${TMP_DIR}/hooks-destination"
 for hook in \
@@ -89,7 +103,9 @@ grep -Fq "command='/usr/bin/ghostty --gtk-single-instance=true'" \
 
 install -d \
     "${TMP_DIR}/chrome-source/opt/google/chrome" \
-    "${TMP_DIR}/chrome-source/usr/share/applications"
+    "${TMP_DIR}/chrome-source/usr/share/applications" \
+    "${TMP_DIR}/chrome-source/usr/share/icons/hicolor/256x256/apps" \
+    "${TMP_DIR}/chrome-source/usr/bin"
 cat > "${TMP_DIR}/chrome-source/opt/google/chrome/google-chrome" <<'EOF'
 #!/usr/bin/env bash
 echo native-chrome
@@ -98,7 +114,15 @@ chmod +x "${TMP_DIR}/chrome-source/opt/google/chrome/google-chrome"
 cat > "${TMP_DIR}/chrome-source/usr/share/applications/google-chrome.desktop" <<'EOF'
 [Desktop Entry]
 Exec=/usr/bin/google-chrome-stable %U
+Icon=google-chrome
 EOF
+printf 'chrome-icon\n' > \
+    "${TMP_DIR}/chrome-source/usr/share/icons/hicolor/256x256/apps/google-chrome.png"
+for command in xdg-desktop-menu xdg-icon-resource xdg-mime xdg-settings; do
+    printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > \
+        "${TMP_DIR}/chrome-source/usr/bin/${command}"
+    chmod +x "${TMP_DIR}/chrome-source/usr/bin/${command}"
+done
 
 "${ROOT_DIR}/build/install-dakota-chrome.sh" \
     "${TMP_DIR}/chrome-source" \
@@ -111,6 +135,10 @@ test "$(readlink "${TMP_DIR}/chrome-root/usr/bin/google-chrome-stable")" = \
 test "$(readlink "${TMP_DIR}/chrome-root/var/opt/google")" = \
     '../../usr/lib/opt/google'
 test -f "${TMP_DIR}/chrome-root/usr/share/applications/google-chrome.desktop"
+test -f "${TMP_DIR}/chrome-root/usr/share/icons/hicolor/256x256/apps/google-chrome.png"
+for command in xdg-desktop-menu xdg-icon-resource xdg-mime xdg-settings; do
+    test -x "${TMP_DIR}/chrome-root/usr/bin/${command}"
+done
 test ! -e "${ROOT_DIR}/custom/dakota/etc/flatpak/preinstall.d/dudley-dakota.preinstall"
 
 if [[ ! -x build/10-dakota.sh ]]; then
