@@ -258,6 +258,8 @@ stamp_image_identity() {
         set_os_release_value "BUG_REPORT_URL" "${support_url}"
         set_os_release_value "IMAGE_ID" "${image_name}"
         set_os_release_value "IMAGE_VERSION" "${image_tag}"
+        set_os_release_value "IMAGE_REF" "ostree-image-signed:docker://${registry}/${vendor}/${image_name}"
+        set_os_release_value "IMAGE_TAG" "${image_tag}"
         set_os_release_value "BUILD_ID" "${git_commit}"
     fi
 }

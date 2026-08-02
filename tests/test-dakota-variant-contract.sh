@@ -44,6 +44,28 @@ PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
     just --justfile "${TMP_DIR}/just/60-custom.just" dudley-dakota
 grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"
 grep -Fxq 'dudley dx' "${TMP_DIR}/ujust.log"
+if grep -Fq 'brew unlink podman' "${TMP_DIR}/just/60-custom.just"; then
+    echo 'FAIL: Dakota must not mask Podman provenance with a Homebrew unlink workaround' >&2
+    exit 1
+fi
+
+install -d \
+    "${TMP_DIR}/docker-migration-home/.config/environment.d" \
+    "${TMP_DIR}/docker-migration-bin"
+printf 'DOCKER_HOST=unix:///run/user/1000/podman/podman.sock\n' > \
+    "${TMP_DIR}/docker-migration-home/.config/environment.d/60-dudley-podman-docker.conf"
+cat > "${TMP_DIR}/docker-migration-bin/systemctl" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${DUDLEY_SYSTEMCTL_LOG}"
+EOF
+chmod +x "${TMP_DIR}/docker-migration-bin/systemctl"
+HOME="${TMP_DIR}/docker-migration-home" \
+DUDLEY_SYSTEMCTL_LOG="${TMP_DIR}/systemctl.log" \
+PATH="${TMP_DIR}/docker-migration-bin:/usr/bin:/bin" \
+    "${ROOT_DIR}/custom/dakota/usr/share/ublue-os/user-setup.hooks.d/18-dudley-docker-engine.sh"
+test ! -e "${TMP_DIR}/docker-migration-home/.config/environment.d/60-dudley-podman-docker.conf"
+grep -Fxq -- '--user daemon-reload' "${TMP_DIR}/systemctl.log"
+grep -Fxq -- '--user unset-environment DOCKER_HOST' "${TMP_DIR}/systemctl.log"
 
 install -d \
     "${TMP_DIR}/docker-source/usr/local/bin" \
@@ -104,7 +126,6 @@ grep -Fq "command='/usr/bin/ghostty --gtk-single-instance=true'" \
 install -d \
     "${TMP_DIR}/chrome-source/opt/google/chrome" \
     "${TMP_DIR}/chrome-source/usr/share/applications" \
-    "${TMP_DIR}/chrome-source/usr/share/icons/hicolor/256x256/apps" \
     "${TMP_DIR}/chrome-source/usr/bin"
 cat > "${TMP_DIR}/chrome-source/opt/google/chrome/google-chrome" <<'EOF'
 #!/usr/bin/env bash
@@ -116,15 +137,26 @@ cat > "${TMP_DIR}/chrome-source/usr/share/applications/google-chrome.desktop" <<
 Exec=/usr/bin/google-chrome-stable %U
 Icon=google-chrome
 EOF
-printf 'chrome-icon\n' > \
-    "${TMP_DIR}/chrome-source/usr/share/icons/hicolor/256x256/apps/google-chrome.png"
+for size in 16 24 32 48 64 128 256; do
+    printf 'chrome-icon-%s\n' "${size}" > \
+        "${TMP_DIR}/chrome-source/opt/google/chrome/product_logo_${size}.png"
+done
 for command in xdg-desktop-menu xdg-icon-resource xdg-mime xdg-settings; do
     printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > \
         "${TMP_DIR}/chrome-source/usr/bin/${command}"
     chmod +x "${TMP_DIR}/chrome-source/usr/bin/${command}"
 done
 
-"${ROOT_DIR}/build/install-dakota-chrome.sh" \
+install -d "${TMP_DIR}/chrome-bin"
+cat > "${TMP_DIR}/chrome-bin/gtk-update-icon-cache" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "${DUDLEY_ICON_CACHE_LOG}"
+EOF
+chmod +x "${TMP_DIR}/chrome-bin/gtk-update-icon-cache"
+
+PATH="${TMP_DIR}/chrome-bin:${PATH}" \
+DUDLEY_ICON_CACHE_LOG="${TMP_DIR}/icon-cache.log" \
+    "${ROOT_DIR}/build/install-dakota-chrome.sh" \
     "${TMP_DIR}/chrome-source" \
     "${TMP_DIR}/chrome-root"
 
@@ -135,10 +167,16 @@ test "$(readlink "${TMP_DIR}/chrome-root/usr/bin/google-chrome-stable")" = \
 test "$(readlink "${TMP_DIR}/chrome-root/var/opt/google")" = \
     '../../usr/lib/opt/google'
 test -f "${TMP_DIR}/chrome-root/usr/share/applications/google-chrome.desktop"
-test -f "${TMP_DIR}/chrome-root/usr/share/icons/hicolor/256x256/apps/google-chrome.png"
+for size in 16 24 32 48 64 128 256; do
+    grep -Fxq "chrome-icon-${size}" \
+        "${TMP_DIR}/chrome-root/usr/share/icons/hicolor/${size}x${size}/apps/google-chrome.png"
+done
 for command in xdg-desktop-menu xdg-icon-resource xdg-mime xdg-settings; do
     test -x "${TMP_DIR}/chrome-root/usr/bin/${command}"
 done
+grep -Fxq -- \
+    "-f -t ${TMP_DIR}/chrome-root/usr/share/icons/hicolor" \
+    "${TMP_DIR}/icon-cache.log"
 test ! -e "${ROOT_DIR}/custom/dakota/etc/flatpak/preinstall.d/dudley-dakota.preinstall"
 
 if [[ ! -x build/10-dakota.sh ]]; then
