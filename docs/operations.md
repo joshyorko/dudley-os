@@ -47,12 +47,21 @@ ujust dudley-dakota
 Native Google Chrome is already baked into the image. The setup command
 initializes Dakota's Bluefin CLI and Homebrew environment, installs the Dudley
 IDE bundle including VS Code Insiders, and leaves Dakota's existing
-Ghostty/Zsh/Oh My Zsh configuration untouched. It also unlinks Homebrew's
-dependency copy of Podman so `podman` resolves to Dakota's `/usr/sbin/podman`.
-The first-login migration hook removes the obsolete
+Ghostty/Zsh/Oh My Zsh configuration untouched. The first-login migration hook
+removes the obsolete
 `~/.config/environment.d/60-dudley-podman-docker.conf` redirect and clears
 `DOCKER_HOST` from the user manager. Restart existing terminals and agent
 processes after upgrading so they inherit the corrected environment.
+
+Enroll the logged-in administrator in Dakota's existing development groups,
+then start a new login session:
+
+```bash
+ujust dx-group
+```
+
+Podman remains the native engine supplied by Dakota. Dudley does not install or
+redirect it through Homebrew.
 
 Install every formula and cask currently published by Josh's Homebrew tap:
 

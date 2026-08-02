@@ -84,9 +84,10 @@ Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
 of Ptyxis, and bakes native Google Chrome into the image from Google's
 signature-verified RPM payload without adding RPM or DNF to the final image. Run
 `ujust dudley-dakota` once to initialize Homebrew, install the Dudley IDE bundle
-(including VS Code Insiders), remove the obsolete Podman-backed `DOCKER_HOST`
-redirect, and keep the image-provided Podman ahead of Homebrew's dependency
-copy. Dakota preserves the terminal and Zsh configuration supplied by its base/user setup.
+(including VS Code Insiders), and remove the obsolete Podman-backed
+`DOCKER_HOST` redirect. Then run `ujust dx-group` and start a new login session
+to enable non-root Docker access. Dakota preserves the terminal and Zsh
+configuration supplied by its base/user setup.
 Run `ujust dudley tools` to install every formula and cask currently published
 by `joshyorko/tools`.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.

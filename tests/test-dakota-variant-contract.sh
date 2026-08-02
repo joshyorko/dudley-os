@@ -39,19 +39,15 @@ cat > "${TMP_DIR}/ujust-bin/ujust" <<'EOF'
 printf '%s\n' "$*" >> "${DUDLEY_UJUST_LOG}"
 EOF
 chmod +x "${TMP_DIR}/ujust-bin/ujust"
-cat > "${TMP_DIR}/ujust-bin/brew" <<'EOF'
-#!/usr/bin/env bash
-printf '%s\n' "$*" >> "${DUDLEY_BREW_LOG}"
-EOF
-chmod +x "${TMP_DIR}/ujust-bin/brew"
 DUDLEY_UJUST_LOG="${TMP_DIR}/ujust.log" \
-DUDLEY_BREW_LOG="${TMP_DIR}/brew.log" \
 PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
     just --justfile "${TMP_DIR}/just/60-custom.just" dudley-dakota
 grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"
 grep -Fxq 'dudley dx' "${TMP_DIR}/ujust.log"
-grep -Fxq 'list --versions podman' "${TMP_DIR}/brew.log"
-grep -Fxq 'unlink podman' "${TMP_DIR}/brew.log"
+if grep -Fq 'brew unlink podman' "${TMP_DIR}/just/60-custom.just"; then
+    echo 'FAIL: Dakota must not mask Podman provenance with a Homebrew unlink workaround' >&2
+    exit 1
+fi
 
 install -d \
     "${TMP_DIR}/docker-migration-home/.config/environment.d" \
