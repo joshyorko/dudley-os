@@ -33,13 +33,26 @@ install -d "${TMP_DIR}/ujust-bin"
 cat > "${TMP_DIR}/ujust-bin/ujust" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "${DUDLEY_UJUST_LOG}"
+if [[ "$*" == 'bluefin-cli' ]]; then
+    printf '%s\n' 'source /usr/share/ublue-os/bling/bling.sh' >> "${HOME}/.zshrc"
+    printf '%s\n' '/usr/share/ublue-os/homebrew/cli.Brewfile' >> "${DUDLEY_BREW_LOG}"
+fi
 EOF
 chmod +x "${TMP_DIR}/ujust-bin/ujust"
+install -d "${TMP_DIR}/dakota-home"
+printf '%s\n' '# Dakota user configuration' > "${TMP_DIR}/dakota-home/.zshrc"
 DUDLEY_UJUST_LOG="${TMP_DIR}/ujust.log" \
+DUDLEY_BREW_LOG="${TMP_DIR}/brew.log" \
+HOME="${TMP_DIR}/dakota-home" \
 PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
     just --justfile "${TMP_DIR}/just/60-custom.just" dudley-dakota
-grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"
-grep -Fxq 'dudley dx' "${TMP_DIR}/ujust.log"
+if grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"; then
+    echo 'FAIL: Dakota setup must not invoke Bluefin CLI or terminal bling' >&2
+    exit 1
+fi
+test "$(cat "${TMP_DIR}/ujust.log")" = 'dudley dx'
+test "$(cat "${TMP_DIR}/dakota-home/.zshrc")" = '# Dakota user configuration'
+test ! -e "${TMP_DIR}/brew.log"
 if grep -Fq 'brew unlink podman' "${TMP_DIR}/just/60-custom.just"; then
     echo 'FAIL: Dakota must not mask Podman provenance with a Homebrew unlink workaround' >&2
     exit 1
@@ -198,6 +211,7 @@ grep -Fxq 'ARG VSCODE_REFRESH_TOKEN' Containerfile.dakota
 grep -Fq 'copy_tree /ctx/oci/dsb-common/dudley/etc/flatpak/preinstall.d /etc/flatpak/preinstall.d' build/10-dakota.sh
 grep -Fq 'copy_file /ctx/oci/dsb-common/dudley/etc/skel/.config/Code/User/settings.json /etc/skel/.config/Code/User/settings.json' build/10-dakota.sh
 grep -Fq 'copy_file "/ctx/oci/dsb-common/dudley/etc/skel/.config/Code - Insiders/User/settings.json" "/etc/skel/.config/Code - Insiders/User/settings.json"' build/10-dakota.sh
+grep -Fq 'copy_executable /ctx/oci/dsb-common/dudley/usr/libexec/dudley/configure-homebrew-no-ask /usr/libexec/dudley/configure-homebrew-no-ask' build/10-dakota.sh
 # shellcheck disable=SC2251
 ! grep -Fq '/ctx/oci/dsb-common/dudley/usr/share/flatpak/preinstall.d' build/10-dakota.sh
 # shellcheck disable=SC2251
