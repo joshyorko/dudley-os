@@ -45,9 +45,10 @@ ujust dudley-dakota
 ```
 
 Native Google Chrome is already baked into the image. The setup command
-initializes Dakota's Bluefin CLI and Homebrew environment, installs the Dudley
-IDE bundle including VS Code Insiders, and leaves Dakota's existing
-Ghostty/Zsh/Oh My Zsh configuration untouched. The first-login migration hook
+initializes Dakota's Bluefin CLI and Homebrew environment and installs the
+Dudley IDE bundle including VS Code Insiders. Dakota's Ghostty default binds
+`Ctrl+Alt+T` to a new Ghostty window and starts Linuxbrew Zsh with Zsh shell
+integration; Zsh then loads the user's existing `~/.zshrc`. The first-login migration hook
 removes the obsolete
 `~/.config/environment.d/60-dudley-podman-docker.conf` redirect and clears
 `DOCKER_HOST` from the user manager. Restart existing terminals and agent
