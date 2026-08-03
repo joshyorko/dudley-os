@@ -83,7 +83,8 @@ Dakota uses an allowlisted, distribution-neutral overlay. It includes both
 Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
 of Ptyxis, and bakes native Google Chrome into the image from Google's
 signature-verified RPM payload without adding RPM or DNF to the final image. Run
-`ujust dudley-dakota` once to initialize Homebrew, install the Dudley IDE bundle
+`ujust dudley-dakota` once to initialize only Dudley's curated Homebrew profile,
+install the Dudley IDE bundle
 (including VS Code Insiders), and remove the obsolete Podman-backed
 `DOCKER_HOST` redirect. Then run `ujust dx-group` and start a new login session
 to enable non-root Docker access. Dakota preserves the terminal and Zsh
@@ -92,7 +93,7 @@ Run `ujust dudley tools` to install every formula and cask currently published
 by `joshyorko/tools`.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-02*
+*Last updated: 2026-08-03*
 
 ## Architecture
 

@@ -41,6 +41,7 @@ copy_executable /ctx/oci/dsb-common/dudley/usr/bin/dudley-random-wallpaper /usr/
 copy_executable /ctx/oci/dsb-common/dudley/usr/bin/dudley-theme /usr/bin/dudley-theme
 copy_executable /ctx/oci/dsb-common/dudley/usr/bin/dudley-wallpaper /usr/bin/dudley-wallpaper
 copy_tree /ctx/oci/dsb-common/dudley/usr/lib/dudley_theme /usr/lib/dudley_theme --exclude=__pycache__
+copy_executable /ctx/oci/dsb-common/dudley/usr/libexec/dudley/configure-homebrew-no-ask /usr/libexec/dudley/configure-homebrew-no-ask
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/backgrounds/dudley /usr/share/backgrounds/dudley
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/glib-2.0/schemas /usr/share/glib-2.0/schemas
 copy_tree /ctx/oci/dsb-common/dudley/usr/share/gnome-background-properties /usr/share/gnome-background-properties
