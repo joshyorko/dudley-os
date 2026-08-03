@@ -34,8 +34,8 @@ COPY custom/dakota /custom/dakota
 COPY custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf /custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf
 COPY custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override /custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override
 COPY custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh /custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:f56c90a0ab6e3ad936a4d00e005e1a1032b3bf66e1c60668adc29441b062e193 /system_files/shared /oci/dsb-common/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:f56c90a0ab6e3ad936a4d00e005e1a1032b3bf66e1c60668adc29441b062e193 /system_files/dudley /oci/dsb-common/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:96dbb1d4ac63f0edbbd348a41ba4ae0c29205a269c84ea6c2a5e6cff79696470 /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:96dbb1d4ac63f0edbbd348a41ba4ae0c29205a269c84ea6c2a5e6cff79696470 /system_files/dudley /oci/dsb-common/dudley
 COPY --from=google-chrome /chrome-root /oci/google-chrome
 COPY --from=docker-bin /usr/local/bin /oci/docker/usr/local/bin
 COPY --from=docker-bin /usr/local/libexec/docker/cli-plugins /oci/docker/usr/local/libexec/docker/cli-plugins
