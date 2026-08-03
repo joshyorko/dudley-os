@@ -27,10 +27,6 @@ if grep -Fq 'configure-podman-docker' "${TMP_DIR}/just-list"; then
     echo 'FAIL: Dakota must not configure Podman as Docker' >&2
     exit 1
 fi
-if grep -Fq 'configure-ghostty-zsh' "${TMP_DIR}/just-list"; then
-    echo 'FAIL: Dakota must preserve its existing Ghostty/Zsh setup' >&2
-    exit 1
-fi
 grep -Fq 'install-default-apps' "${TMP_DIR}/just-list"
 
 install -d "${TMP_DIR}/ujust-bin"
@@ -120,8 +116,19 @@ install -d "${TMP_DIR}/dconf"
 cp "${ROOT_DIR}/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings" \
     "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
 dconf compile "${TMP_DIR}/distro-db" "${TMP_DIR}/dconf"
+grep -Fq "custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']" \
+    "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+grep -Fq "name='Terminal'" "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
 grep -Fq "command='/usr/bin/ghostty --gtk-single-instance=true'" \
     "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+grep -Fq "binding='<Primary><Alt>t'" "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+if grep -Fq '/usr/bin/ptyxis --new-window' "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"; then
+    echo 'FAIL: Dakota terminal shortcut must not invoke Ptyxis' >&2
+    exit 1
+fi
+grep -Fq 'copy_file /ctx/custom/dakota/etc/ghostty/config /etc/ghostty/config' build/10-dakota.sh
+grep -Fq 'command = /home/linuxbrew/.linuxbrew/bin/zsh' custom/dakota/etc/ghostty/config
+grep -Fq 'shell-integration = zsh' custom/dakota/etc/ghostty/config
 
 install -d \
     "${TMP_DIR}/chrome-source/opt/google/chrome" \

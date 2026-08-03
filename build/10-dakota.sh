@@ -52,6 +52,7 @@ copy_tree /ctx/custom/system_files/usr/share/glib-2.0/schemas /usr/share/glib-2.
 copy_tree /ctx/custom/system_files/usr/share/ublue-os/user-setup.hooks.d /usr/share/ublue-os/user-setup.hooks.d
 copy_file /ctx/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings \
     /etc/dconf/db/distro.d/99-dudley-terminal-keybindings
+copy_file /ctx/custom/dakota/etc/ghostty/config /etc/ghostty/config
 copy_executable \
     /ctx/custom/dakota/usr/share/ublue-os/user-setup.hooks.d/18-dudley-docker-engine.sh \
     /usr/share/ublue-os/user-setup.hooks.d/18-dudley-docker-engine.sh

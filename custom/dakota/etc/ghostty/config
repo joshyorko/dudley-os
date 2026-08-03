@@ -1,0 +1,3 @@
+# Launch Zsh; it automatically loads ~/.zshrc (Zinit, OMZ plugins, Starship).
+command = /home/linuxbrew/.linuxbrew/bin/zsh
+shell-integration = zsh
