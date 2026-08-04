@@ -13,7 +13,7 @@ jobs:
       packages: write
     steps:
       - name: Delete Images Older Than 90 Days
-        uses: projectbluefin/actions/bootc-build/ghcr-cleanup@39a69224d216338402fd83d8d0702d7ef3fefba3 # v1
+        uses: projectbluefin/actions/bootc-build/ghcr-cleanup@c3ffb5dd594f4a363298bacc7ad4cfe18457fa97 # v1
         with:
           packages: dudley-os
           older-than: 30 days
