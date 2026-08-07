@@ -52,14 +52,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup runner tools
-        uses: projectbluefin/actions/bootc-build/setup-runner@5fe9b3bcfdf3a68b4d2eb459445505b600e456e6 # v1
+        uses: projectbluefin/actions/bootc-build/setup-runner@6a551de8bcd2375b2d310a36b2719e928764c0a3 # v1
         with:
           storage-backend: none
           install-tools: '["just"]'
       - name: Preflight publish
         id: preflight
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/preflight@5fe9b3bcfdf3a68b4d2eb459445505b600e456e6 # v1
+        uses: projectbluefin/actions/bootc-build/preflight@6a551de8bcd2375b2d310a36b2719e928764c0a3 # v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-name: ${{ env.IMAGE_NAME }}
@@ -103,7 +103,7 @@ jobs:
       - name: Push To GHCR
         id: push
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/push-image@5fe9b3bcfdf3a68b4d2eb459445505b600e456e6 # v1
+        uses: projectbluefin/actions/bootc-build/push-image@6a551de8bcd2375b2d310a36b2719e928764c0a3 # v1
         with:
           image-name: ${{ env.IMAGE_NAME }}
           tags: ${{ steps.metadata.outputs.tags }}
@@ -112,7 +112,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Sign image and publish provenance
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: projectbluefin/actions/bootc-build/sign-and-publish@5fe9b3bcfdf3a68b4d2eb459445505b600e456e6 # v1
+        uses: projectbluefin/actions/bootc-build/sign-and-publish@6a551de8bcd2375b2d310a36b2719e928764c0a3 # v1
         with:
           image: ${{ steps.preflight.outputs.image-ref }}
           digest: ${{ steps.push.outputs.digest }}
