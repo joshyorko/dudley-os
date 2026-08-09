@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b"
-ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:45@sha256:879d5fd5508729f1fccc4688a622d03172b107a3e747b18accd3f0ea916592ab"
+ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:45@sha256:5154aa34f85f0049f9ebfc57f8a5cbdf10baba89f3f5bacc94c96869d6ba8b09"
 ARG DOCKER_BIN_REF="docker.io/library/docker:29-dind@sha256:e8faad5a8dc5279dff929afc5449f2791736912fff9f99351d742db2fad01b4c"
 
 FROM ${CHROME_BUILDER_REF} AS google-chrome
