@@ -37,9 +37,9 @@ python3 /ctx/oci/dsb-common/scripts/install-payload.py \
     --dest /
 
 for required in \
-    /etc/profile.d/uwelcome.sh \
+    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
-    /etc/uwelcome/config.json \
+    /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
     /usr/share/dudley/terminal-contract.json \
     /usr/share/dudley/terminal/ghostty.conf; do

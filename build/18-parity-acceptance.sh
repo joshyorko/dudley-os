@@ -15,14 +15,14 @@ root_path() {
     printf '%s%s\n' "${root}" "$1"
 }
 
-for command in jq ujust umotd uwelcome; do
+for command in jq ujust umotd; do
     command -v "${command}" >/dev/null
 done
 
 for required in \
-    /etc/profile.d/uwelcome.sh \
+    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
-    /etc/uwelcome/config.json \
+    /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
     /usr/share/dudley/terminal-contract.json \
     /usr/share/ublue-os/just/60-dudley.just; do
@@ -36,8 +36,8 @@ jq -e '
     .defaults.font.family == "JetBrains Mono" and
     .defaults.font.size == 16
 ' "${contract}" >/dev/null
-jq -e '.motd.commands == ["umotd"]' \
-    "$(root_path /etc/uwelcome/config.json)" >/dev/null
+jq -e 'any(.commands[]; .cmd == "umotd toggle")' \
+    "$(root_path /etc/umotd/config.json)" >/dev/null
 
 acceptance_home="$(mktemp -d)"
 trap 'rm -rf "${acceptance_home}"' EXIT
@@ -54,7 +54,6 @@ HOME="${acceptance_home}" ensure_dudley_brew
 command -v brew >/dev/null
 
 HOME="${acceptance_home}" umotd | grep -q '[^[:space:]]'
-HOME="${acceptance_home}" uwelcome | grep -q '[^[:space:]]'
 
 case "${stream}" in
     dakota|dakota-nvidia)
@@ -68,7 +67,7 @@ case "${stream}" in
             'shell-integration = zsh'; do
             grep -Fq "${setting}" "${ghostty}"
         done
-        ! grep -Fq 'ujust bluefin-cli' "$(root_path /etc/uwelcome/config.json)"
+        ! grep -Fq 'ujust bluefin-cli' "$(root_path /etc/umotd/config.json)"
         ;;
     stable|nvidia)
         ptyxis="$(root_path /usr/share/dudley/terminal/ptyxis.dconf)"
