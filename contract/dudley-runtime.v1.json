@@ -32,7 +32,7 @@
         "update"
       ],
       "terminal": "ptyxis",
-      "motd": "uwelcome+umotd"
+      "motd": "umotd"
     },
     "dakota": {
       "accepted_base_refs": [
@@ -59,7 +59,7 @@
         "toggle-vms"
       ],
       "terminal": "ghostty",
-      "motd": "uwelcome+umotd"
+      "motd": "umotd"
     }
   }
 }

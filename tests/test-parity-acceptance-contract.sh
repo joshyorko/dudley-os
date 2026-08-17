@@ -10,7 +10,7 @@ bin="${TMP_DIR}/bin"
 mkdir -p \
     "${fixture}/etc/profile.d" \
     "${fixture}/etc/ublue-os" \
-    "${fixture}/etc/uwelcome" \
+    "${fixture}/etc/umotd" \
     "${fixture}/usr/libexec/dudley" \
     "${fixture}/usr/share/dudley/terminal" \
     "${fixture}/usr/share/ublue-os/just" \
@@ -30,9 +30,9 @@ font-size = 16
 window-width = 120
 window-height = 40
 EOF
-printf '%s\n' '#!/usr/bin/env bash' > "${fixture}/etc/profile.d/uwelcome.sh"
+printf '%s\n' '#!/usr/bin/env bash' > "${fixture}/etc/profile.d/umotd.sh"
 printf '%s\n' '{}' > "${fixture}/etc/ublue-os/tags.json"
-printf '%s\n' '{"motd":{"commands":["umotd"]}}' > "${fixture}/etc/uwelcome/config.json"
+printf '%s\n' '{"commands":[{"cmd":"umotd toggle"}]}' > "${fixture}/etc/umotd/config.json"
 printf '%s\n' 'dudley:' > "${fixture}/usr/share/ublue-os/just/60-dudley.just"
 cat > "${TMP_DIR}/runtime-contract.json" <<'EOF'
 {"streams":{"dakota":{"required_ujust":["dudley"]},"stable":{"required_ujust":["dudley"]}}}
@@ -48,10 +48,6 @@ else
     exit 2
 fi
 EOF
-cat > "${bin}/uwelcome" <<'EOF'
-#!/usr/bin/env bash
-printf '%s\n' 'Welcome to Dudley'
-EOF
 cat > "${bin}/umotd" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' 'Dudley MOTD'
@@ -60,7 +56,7 @@ cat > "${bin}/brew" <<'EOF'
 #!/usr/bin/env bash
 exit 0
 EOF
-chmod +x "${bin}/ujust" "${bin}/uwelcome" "${bin}/umotd" "${bin}/brew"
+chmod +x "${bin}/ujust" "${bin}/umotd" "${bin}/brew"
 
 mkdir -p "${fixture}/etc/ghostty"
 cat "${fixture}/usr/share/dudley/terminal/ghostty.conf" > "${fixture}/etc/ghostty/config"

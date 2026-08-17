@@ -216,9 +216,9 @@ grep -Fq -- '--profile dakota' build/10-dakota.sh
 grep -Fq -- '--contract /ctx/oci/dsb-common/contract/dudley-payload.v1.json' build/10-dakota.sh
 grep -Fq -- '--dest /' build/10-dakota.sh
 for required in \
-    /etc/profile.d/uwelcome.sh \
+    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
-    /etc/uwelcome/config.json \
+    /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
     /usr/share/dudley/terminal-contract.json \
     /usr/share/dudley/terminal/ghostty.conf; do
