@@ -1,0 +1,65 @@
+{
+  "schema": "dudley-runtime.v1",
+  "description": "Final assembled-image acceptance matrix for Dudley streams.",
+  "streams": {
+    "stable": {
+      "accepted_base_refs": [
+        "ghcr.io/projectbluefin/bluefin:stable@sha256:383f523982a84cd23b40a8d252b50d6c4a65b013b03bfb70e74e0708fd8e082f",
+        "ghcr.io/projectbluefin/bluefin-nvidia:stable@sha256:8e1376cf17f9d8a47e35bc22dbb80c14f66018cb8d857f236db03b4958bdcbdb"
+      ],
+      "required_ujust": [
+        "benchmark",
+        "bluefin-apps",
+        "bluefin-cli",
+        "check-sb-key",
+        "clean-system",
+        "cncf",
+        "device-info",
+        "devmode",
+        "dudley",
+        "install-default-apps",
+        "install-jetbrains-toolbox",
+        "install-opentabletdriver",
+        "install-system-flatpaks",
+        "logs-last-boot",
+        "logs-this-boot",
+        "setup-vms",
+        "toggle-devmode",
+        "toggle-testing",
+        "toggle-updates",
+        "toggle-user-motd",
+        "toggle-vms",
+        "update"
+      ],
+      "terminal": "ptyxis",
+      "motd": "uwelcome+umotd"
+    },
+    "dakota": {
+      "accepted_base_refs": [
+        "ghcr.io/projectbluefin/dakota:stable@sha256:2aa538b4fd31454820ef271fd911291bae5aeed68957faa4cff3f4389c0dd00b",
+        "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:b1615f9e1feb9fc28f0141c38e932950382e7841eebbf16c1fbd8b92e80e49f2"
+      ],
+      "required_ujust": [
+        "benchmark",
+        "devmode",
+        "dudley",
+        "dudley-dakota",
+        "install-default-apps",
+        "install-jetbrains-toolbox",
+        "install-opentabletdriver",
+        "toggle-devmode",
+        "toggle-updates",
+        "toggle-user-motd",
+        "update"
+      ],
+      "intentionally_omitted_ujust": [
+        "bluefin-cli",
+        "setup-vms",
+        "toggle-testing",
+        "toggle-vms"
+      ],
+      "terminal": "ghostty",
+      "motd": "uwelcome+umotd"
+    }
+  }
+}
