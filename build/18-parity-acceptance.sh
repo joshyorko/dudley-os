@@ -52,8 +52,16 @@ grep -Fq 'Available Dudley Brewfiles:' <<< "${dudley_list}"
 
 # shellcheck disable=SC1090
 source "$(root_path /usr/libexec/dudley/ensure-homebrew)"
-HOME="${acceptance_home}" ensure_dudley_brew
-command -v brew >/dev/null
+acceptance_brew_bin="${acceptance_home}/brew/bin"
+install -d -m 0755 "${acceptance_brew_bin}"
+printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > "${acceptance_brew_bin}/brew"
+chmod 0755 "${acceptance_brew_bin}/brew"
+(
+    export HOME="${acceptance_home}"
+    export DUDLEY_BREW_BIN="${acceptance_brew_bin}"
+    ensure_dudley_brew
+    command -v brew >/dev/null
+)
 
 motd="$(HOME="${acceptance_home}" umotd)"
 grep -q '[^[:space:]]' <<< "${motd}"
