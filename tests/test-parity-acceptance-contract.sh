@@ -18,6 +18,10 @@ mkdir -p \
 
 cat > "${fixture}/usr/libexec/dudley/ensure-homebrew" <<'EOF'
 ensure_dudley_brew() {
+    if [[ -n "${DUDLEY_BREW_BIN:-}" && -x "${DUDLEY_BREW_BIN}/brew" ]]; then
+        PATH="${DUDLEY_BREW_BIN}:${PATH}"
+        export PATH
+    fi
     command -v brew >/dev/null
 }
 EOF
@@ -47,6 +51,11 @@ elif [[ "$*" == "dudley list" ]]; then
     for ((line = 0; line < 20000; line++)); do
         printf '%s\n' 'additional Brewfile output'
     done
+elif [[ "$*" == "bluefin-cli" ]]; then
+    : > "${BOOTSTRAP_MARKER:?}"
+    mkdir -p "${HOME}/.linuxbrew/bin"
+    printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > "${HOME}/.linuxbrew/bin/brew"
+    chmod +x "${HOME}/.linuxbrew/bin/brew"
 else
     exit 2
 fi
@@ -55,11 +64,7 @@ cat > "${bin}/umotd" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' 'Dudley MOTD'
 EOF
-cat > "${bin}/brew" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-chmod +x "${bin}/ujust" "${bin}/umotd" "${bin}/brew"
+chmod +x "${bin}/ujust" "${bin}/umotd"
 
 mkdir -p "${fixture}/etc/ghostty"
 cat "${fixture}/usr/share/dudley/terminal/ghostty.conf" > "${fixture}/etc/ghostty/config"
@@ -69,10 +74,14 @@ printf '%s\n' \
 
 DUDLEY_ROOT="${fixture}" \
 DUDLEY_STREAM=dakota \
-DUDLEY_BREW_BIN="${bin}" \
+BOOTSTRAP_MARKER="${TMP_DIR}/bootstrap-attempted" \
 DUDLEY_RUNTIME_CONTRACT="${TMP_DIR}/runtime-contract.json" \
 PATH="${bin}:/usr/bin:/bin" \
     bash "${ROOT_DIR}/build/18-parity-acceptance.sh"
+if [[ -e "${TMP_DIR}/bootstrap-attempted" ]]; then
+    echo 'FAIL: parity acceptance attempted interactive Homebrew bootstrap' >&2
+    exit 1
+fi
 
 mkdir -p "${fixture}/etc/dconf/db/distro.d" "${fixture}/usr/share/dudley/terminal"
 printf "%s\n" "font-name='JetBrains Mono 16'" "palette='catppuccin-dynamic'" > \
@@ -82,7 +91,7 @@ printf '%s\n' "default-columns=120" "default-rows=40" > \
 
 DUDLEY_ROOT="${fixture}" \
 DUDLEY_STREAM=stable \
-DUDLEY_BREW_BIN="${bin}" \
+BOOTSTRAP_MARKER="${TMP_DIR}/bootstrap-attempted" \
 DUDLEY_RUNTIME_CONTRACT="${TMP_DIR}/runtime-contract.json" \
 PATH="${bin}:/usr/bin:/bin" \
     bash "${ROOT_DIR}/build/18-parity-acceptance.sh"
@@ -92,7 +101,6 @@ cat > "${TMP_DIR}/missing-recipe-contract.json" <<'EOF'
 EOF
 if DUDLEY_ROOT="${fixture}" \
     DUDLEY_STREAM=stable \
-    DUDLEY_BREW_BIN="${bin}" \
     DUDLEY_RUNTIME_CONTRACT="${TMP_DIR}/missing-recipe-contract.json" \
     PATH="${bin}:/usr/bin:/bin" \
     bash "${ROOT_DIR}/build/18-parity-acceptance.sh" >/dev/null 2>&1; then
