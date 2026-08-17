@@ -107,6 +107,8 @@ echo "::group:: Dudley final metadata"
 
 /ctx/build/20-final-metadata.sh
 
+DUDLEY_STREAM="${DUDLEY_STREAM:-stable}" /ctx/build/18-parity-acceptance.sh
+
 echo "::endgroup::"
 
 echo "Custom build complete!"

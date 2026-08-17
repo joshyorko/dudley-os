@@ -79,7 +79,8 @@ Stable and NVIDIA add the Dudley product layer while retaining their Project Blu
 - Google Chrome installed into the image
 - Dudley identity, metadata, validation, publishing, and local product glue
 
-Dakota uses an allowlisted, distribution-neutral overlay. It includes both
+Dakota installs the selector-reviewed, distribution-neutral `dsb-common`
+profile. It includes both
 Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
 of Ptyxis, and bakes native Google Chrome into the image from Google's
 signature-verified RPM payload without adding RPM or DNF to the final image. Run
@@ -87,13 +88,15 @@ signature-verified RPM payload without adding RPM or DNF to the final image. Run
 install the Dudley IDE bundle
 (including VS Code Insiders), and remove the obsolete Podman-backed
 `DOCKER_HOST` redirect. Then run `ujust dx-group` and start a new login session
-to enable non-root Docker access. Dakota preserves the terminal and Zsh
-configuration supplied by its base/user setup.
+to enable non-root Docker access. Dakota applies Dudley's shared Ghostty size,
+font, theme, clipboard, URL, and shortcut defaults, then overlays its Zsh
+command and shell integration. Its clean-user command, Homebrew, MOTD, and
+terminal contracts are checked during every Dakota and Dakota NVIDIA build.
 Run `ujust dudley tools` to install every formula and cask currently published
 by `joshyorko/tools`.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-03*
+*Last updated: 2026-08-17*
 
 ## Architecture
 

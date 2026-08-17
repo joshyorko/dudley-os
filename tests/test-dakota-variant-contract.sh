@@ -139,7 +139,8 @@ if grep -Fq '/usr/bin/ptyxis --new-window' "${TMP_DIR}/dconf/99-dudley-terminal-
     echo 'FAIL: Dakota terminal shortcut must not invoke Ptyxis' >&2
     exit 1
 fi
-grep -Fq 'copy_file /ctx/custom/dakota/etc/ghostty/config /etc/ghostty/config' build/10-dakota.sh
+grep -Fq 'install -D -m 0644 /usr/share/dudley/terminal/ghostty.conf /etc/ghostty/config' build/10-dakota.sh
+grep -Fq 'cat /ctx/custom/dakota/etc/ghostty/config >> /etc/ghostty/config' build/10-dakota.sh
 grep -Fq 'command = /home/linuxbrew/.linuxbrew/bin/zsh' custom/dakota/etc/ghostty/config
 grep -Fq 'shell-integration = zsh' custom/dakota/etc/ghostty/config
 
@@ -208,25 +209,23 @@ grep -Eq '^ARG BASE_IMAGE_REF="ghcr\.io/projectbluefin/dakota:stable@sha256:[a-f
 grep -Fq '/ctx/build/10-dakota.sh' Containerfile.dakota
 grep -Fq 'RUN bootc container lint' Containerfile.dakota
 grep -Fxq 'ARG VSCODE_REFRESH_TOKEN' Containerfile.dakota
-grep -Fq 'copy_tree /ctx/oci/dsb-common/dudley/etc/flatpak/preinstall.d /etc/flatpak/preinstall.d' build/10-dakota.sh
-grep -Fq 'copy_file /ctx/oci/dsb-common/dudley/etc/skel/.config/Code/User/settings.json /etc/skel/.config/Code/User/settings.json' build/10-dakota.sh
-grep -Fq 'copy_file "/ctx/oci/dsb-common/dudley/etc/skel/.config/Code - Insiders/User/settings.json" "/etc/skel/.config/Code - Insiders/User/settings.json"' build/10-dakota.sh
-grep -Fq 'copy_executable /ctx/oci/dsb-common/dudley/usr/libexec/dudley/configure-homebrew-no-ask /usr/libexec/dudley/configure-homebrew-no-ask' build/10-dakota.sh
-# shellcheck disable=SC2251
-! grep -Fq '/ctx/oci/dsb-common/dudley/usr/share/flatpak/preinstall.d' build/10-dakota.sh
-# shellcheck disable=SC2251
-! grep -Fq '/ctx/oci/dsb-common/dudley/usr/share/ublue-os/update.just' build/10-dakota.sh
-# The Dakota variant accepts only these Dudley files; bulk copies would let
-# Fedora/Bazaar-only payload leak into the distroless image as dsb-common grows.
-if grep -Fq 'copy_tree /ctx/oci/dsb-common/dudley/etc/xdg/autostart /etc/xdg/autostart' build/10-dakota.sh ||
-    grep -Fq 'copy_tree /ctx/oci/dsb-common/dudley/usr/bin /usr/bin' build/10-dakota.sh; then
-    echo 'FAIL: Dakota assembly must not bulk-copy Dudley autostart or executable payloads' >&2
-    exit 1
-fi
-grep -Fq 'copy_file /ctx/oci/dsb-common/dudley/etc/xdg/autostart/dudley-random-wallpaper.desktop /etc/xdg/autostart/dudley-random-wallpaper.desktop' build/10-dakota.sh
-for command in dudley-build-info dudley-random-wallpaper dudley-theme dudley-wallpaper; do
-    grep -Fq "copy_executable /ctx/oci/dsb-common/dudley/usr/bin/${command} /usr/bin/${command}" build/10-dakota.sh
+grep -Fq '/contract/dudley-payload.v1.json /oci/dsb-common/contract/dudley-payload.v1.json' Containerfile.dakota
+grep -Fq '/scripts/install-payload.py /oci/dsb-common/scripts/install-payload.py' Containerfile.dakota
+grep -Fq '/ctx/oci/dsb-common/scripts/install-payload.py' build/10-dakota.sh
+grep -Fq -- '--profile dakota' build/10-dakota.sh
+grep -Fq -- '--contract /ctx/oci/dsb-common/contract/dudley-payload.v1.json' build/10-dakota.sh
+grep -Fq -- '--dest /' build/10-dakota.sh
+for required in \
+    /etc/profile.d/uwelcome.sh \
+    /etc/ublue-os/tags.json \
+    /etc/uwelcome/config.json \
+    /usr/libexec/dudley/ensure-homebrew \
+    /usr/share/dudley/terminal-contract.json \
+    /usr/share/dudley/terminal/ghostty.conf; do
+    grep -Fq "    ${required}" build/10-dakota.sh
 done
+# shellcheck disable=SC2016
+grep -Fq 'test -e "${required}"' build/10-dakota.sh
 # shellcheck disable=SC2251
 ! grep -Eq '10-build\.sh|15-dx\.sh|rpm-ostree' Containerfile.dakota build/10-dakota.sh
 if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |
@@ -234,7 +233,7 @@ if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |
     echo 'FAIL: the final Dakota image assembly must not invoke dnf or dnf5' >&2
     exit 1
 fi
-grep -Eq '^ARG CHROME_BUILDER_REF="registry\.fedoraproject\.org/fedora:45@sha256:[a-f0-9]{64}"$' Containerfile.dakota
+grep -Eq '^ARG CHROME_BUILDER_REF="registry\.fedoraproject\.org/fedora:46@sha256:[a-f0-9]{64}"$' Containerfile.dakota
 grep -Fq 'rpmkeys --checksig /tmp/google-chrome.rpm' Containerfile.dakota
 grep -Fq 'COPY --from=google-chrome /chrome-root /oci/google-chrome' Containerfile.dakota
 grep -Fq 'CONTAINERFILE=./Containerfile.dakota' .github/workflows/build-dakota.yml

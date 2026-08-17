@@ -38,6 +38,7 @@ ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/bluefin:stable@sha256:383f523982a84cd
 FROM scratch AS ctx
 
 COPY build /build
+COPY contract /contract
 COPY custom /custom
 # Shared DSB organisation layer – product-agnostic configs consumed by all DSB images
 COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:f37544e4c60c86e48e2bb072cc31a9760422620fb51c88c7938eb57312f6e2ab /system_files/shared /oci/dsb-common/shared
