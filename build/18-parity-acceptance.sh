@@ -43,17 +43,20 @@ acceptance_home="$(mktemp -d)"
 trap 'rm -rf "${acceptance_home}"' EXIT
 
 HOME="${acceptance_home}" ujust --list > "${acceptance_home}/ujust-list"
+available_recipes="$(awk '{print $1}' "${acceptance_home}/ujust-list")"
 while IFS= read -r recipe; do
-    awk '{print $1}' "${acceptance_home}/ujust-list" | grep -Fxq "${recipe}"
+    grep -Fxq "${recipe}" <<< "${available_recipes}"
 done < <(jq -r --arg stream "${stream}" '.streams[$stream].required_ujust[]' "${runtime_contract}")
-HOME="${acceptance_home}" ujust dudley list | grep -Fq 'Available Dudley Brewfiles:'
+dudley_list="$(HOME="${acceptance_home}" ujust dudley list)"
+grep -Fq 'Available Dudley Brewfiles:' <<< "${dudley_list}"
 
 # shellcheck disable=SC1090
 source "$(root_path /usr/libexec/dudley/ensure-homebrew)"
 HOME="${acceptance_home}" ensure_dudley_brew
 command -v brew >/dev/null
 
-HOME="${acceptance_home}" umotd | grep -q '[^[:space:]]'
+motd="$(HOME="${acceptance_home}" umotd)"
+grep -q '[^[:space:]]' <<< "${motd}"
 
 case "${stream}" in
     dakota|dakota-nvidia)
