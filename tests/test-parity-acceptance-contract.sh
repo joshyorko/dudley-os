@@ -44,6 +44,9 @@ if [[ "$*" == "--list" ]]; then
     printf '%s\n' 'dudley'
 elif [[ "$*" == "dudley list" ]]; then
     printf '%s\n' 'Available Dudley Brewfiles:'
+    for ((line = 0; line < 20000; line++)); do
+        printf '%s\n' 'additional Brewfile output'
+    done
 else
     exit 2
 fi
