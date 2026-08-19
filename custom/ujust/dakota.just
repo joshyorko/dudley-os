@@ -4,5 +4,5 @@
 dudley-dakota:
     #!/usr/bin/env bash
     set -euo pipefail
-    ujust dudley dx
+    ujust dudley
     echo "Run 'ujust dx-group', then log out and back in, to enable non-root Docker access."

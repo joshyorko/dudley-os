@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-for command in bootc ujust podman python3 rsync jq dconf glib-compile-schemas; do
-    command -v "${command}" >/dev/null
+for command in bootc ujust podman python3 jq dconf glib-compile-schemas; do
+    if ! command -v "${command}" >/dev/null; then
+        echo "Missing required Dakota build command: ${command}" >&2
+        exit 1
+    fi
 done
 
 copy_tree() {
@@ -12,7 +15,7 @@ copy_tree() {
 
     [[ -d "${source}" ]] || return 0
     install -d -m 0755 "${destination}"
-    rsync -a "$@" "${source}/" "${destination}/"
+    cp -a "$@" "${source}/." "${destination}/"
 }
 
 copy_file() {
@@ -37,13 +40,15 @@ python3 /ctx/oci/dsb-common/scripts/install-payload.py \
     --dest /
 
 for required in \
-    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
     /usr/share/dudley/terminal-contract.json \
     /usr/share/dudley/terminal/ghostty.conf; do
-    test -e "${required}"
+    if [[ ! -e "${required}" ]]; then
+        echo "Missing required Dakota payload path: ${required}" >&2
+        exit 1
+    fi
 done
 
 copy_tree /ctx/custom/system_files/etc/fonts/conf.d /etc/fonts/conf.d

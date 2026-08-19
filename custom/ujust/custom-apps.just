@@ -8,37 +8,37 @@
 # Install default applications via Homebrew
 [group('Apps')]
 install-default-apps:
-    @ujust dudley brew cli
+    @ujust dudley
 
 # Install development tools via Homebrew
 [group('Apps')]
 install-dev-tools:
-    @ujust dudley brew dev
+    @ujust dudley
 
 # Install IDE and editor tools via Homebrew
 [group('Apps')]
 install-ide-tools:
-    @ujust dudley brew ide
+    @ujust dudley
 
 # Install AI and agent tools via Homebrew
 [group('Apps')]
 install-ai-tools:
-    @ujust dudley brew ai
+    @ujust dudley ai
 
 # Install fonts via Homebrew
 [group('Apps')]
 install-fonts:
-    @ujust dudley brew fonts
+    @ujust dudley
 
 # Install Kubernetes tools via Homebrew
 [group('Apps')]
 install-k8s-tools:
-    @ujust dudley brew k8s
+    @ujust dudley
 
 # Install all Brewfiles at once
 [group('Apps')]
 install-all-brew:
-    @ujust dudley brew all
+    @ujust dudley
 
 # Shortcut for install-jetbrains-toolbox
 [group('Apps')]
@@ -56,7 +56,7 @@ install-flatpak APP_ID:
 # Install VS Code and related IDE tooling from the shared Dudley IDE bundle
 [group('Apps')]
 install-vscode:
-    @ujust dudley brew ide
+    @ujust dudley
 
 # Example: Install GIMP via Flatpak
 [group('Apps')]
