@@ -2,7 +2,10 @@
 set -euo pipefail
 
 for command in bootc ujust podman python3 jq dconf glib-compile-schemas; do
-    command -v "${command}" >/dev/null
+    if ! command -v "${command}" >/dev/null; then
+        echo "Missing required Dakota build command: ${command}" >&2
+        exit 1
+    fi
 done
 
 copy_tree() {
@@ -43,7 +46,10 @@ for required in \
     /usr/libexec/dudley/ensure-homebrew \
     /usr/share/dudley/terminal-contract.json \
     /usr/share/dudley/terminal/ghostty.conf; do
-    test -e "${required}"
+    if [[ ! -e "${required}" ]]; then
+        echo "Missing required Dakota payload path: ${required}" >&2
+        exit 1
+    fi
 done
 
 copy_tree /ctx/custom/system_files/etc/fonts/conf.d /etc/fonts/conf.d

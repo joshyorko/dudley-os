@@ -50,9 +50,27 @@ if grep -Fxq 'bluefin-cli' "${TMP_DIR}/ujust.log"; then
     echo 'FAIL: Dakota setup must not invoke Bluefin CLI or terminal bling' >&2
     exit 1
 fi
-test "$(cat "${TMP_DIR}/ujust.log")" = 'dudley dx'
+test "$(cat "${TMP_DIR}/ujust.log")" = 'dudley'
 test "$(cat "${TMP_DIR}/dakota-home/.zshrc")" = '# Dakota user configuration'
 test ! -e "${TMP_DIR}/brew.log"
+
+for contract in \
+    'install-default-apps|dudley' \
+    'install-dev-tools|dudley' \
+    'install-ide-tools|dudley' \
+    'install-ai-tools|dudley ai' \
+    'install-fonts|dudley' \
+    'install-k8s-tools|dudley' \
+    'install-all-brew|dudley' \
+    'install-vscode|dudley'; do
+    recipe="${contract%%|*}"
+    expected="${contract#*|}"
+    : > "${TMP_DIR}/ujust.log"
+    DUDLEY_UJUST_LOG="${TMP_DIR}/ujust.log" \
+    PATH="${TMP_DIR}/ujust-bin:/usr/bin:/bin" \
+        just --justfile "${TMP_DIR}/just/60-custom.just" "${recipe}"
+    test "$(cat "${TMP_DIR}/ujust.log")" = "${expected}"
+done
 if grep -Fq 'brew unlink podman' "${TMP_DIR}/just/60-custom.just"; then
     echo 'FAIL: Dakota must not mask Podman provenance with a Homebrew unlink workaround' >&2
     exit 1

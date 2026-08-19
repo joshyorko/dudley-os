@@ -75,6 +75,7 @@ Stable and NVIDIA add the Dudley product layer while retaining their Project Blu
 
 - shared DSB defaults and Dudley payload from `dsb-common`
 - Dudley wallpapers, runtime Brewfiles, Flatpak declarations, VS Code payload, hooks, and recipes
+- stable Hauler for air-gap packaging through Dudley's curated Homebrew profile
 - DX-style container, virtualization, and developer runtime additions
 - Google Chrome installed into the image
 - Dudley identity, metadata, validation, publishing, and local product glue
@@ -92,11 +93,10 @@ to enable non-root Docker access. Dakota applies Dudley's shared Ghostty size,
 font, theme, clipboard, URL, and shortcut defaults, then overlays its Zsh
 command and shell integration. Its clean-user command, Homebrew, MOTD, and
 terminal contracts are checked during every Dakota and Dakota NVIDIA build.
-Run `ujust dudley tools` to install every formula and cask currently published
-by `joshyorko/tools`.
+Run `ujust dudley` to install the complete curated Dudley profile.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-17*
+*Last updated: 2026-08-19*
 
 ## Architecture
 

@@ -65,10 +65,11 @@ ujust dx-group
 Podman remains the native engine supplied by Dakota. Dudley does not install or
 redirect it through Homebrew.
 
-Install every formula and cask currently published by Josh's Homebrew tap:
+Install Dudley's complete curated Homebrew profile, including the stable
+Hauler cask and Josh's default tools:
 
 ```bash
-ujust dudley tools
+ujust dudley
 ```
 
 ## Roll back
