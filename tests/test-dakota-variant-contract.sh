@@ -234,7 +234,6 @@ grep -Fq -- '--profile dakota' build/10-dakota.sh
 grep -Fq -- '--contract /ctx/oci/dsb-common/contract/dudley-payload.v1.json' build/10-dakota.sh
 grep -Fq -- '--dest /' build/10-dakota.sh
 for required in \
-    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
@@ -242,6 +241,10 @@ for required in \
     /usr/share/dudley/terminal/ghostty.conf; do
     grep -Fq "    ${required}" build/10-dakota.sh
 done
+if grep -Fq '    /etc/profile.d/umotd.sh' build/10-dakota.sh; then
+    echo "FAIL: Dakota must not reinstall Bluefin's umotd profile hook" >&2
+    exit 1
+fi
 # shellcheck disable=SC2016
 grep -Fq 'test -e "${required}"' build/10-dakota.sh
 # shellcheck disable=SC2251

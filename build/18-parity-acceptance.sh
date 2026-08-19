@@ -20,7 +20,6 @@ for command in jq ujust umotd; do
 done
 
 for required in \
-    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
@@ -81,6 +80,7 @@ case "${stream}" in
         ! grep -Fq 'ujust bluefin-cli' "$(root_path /etc/umotd/config.json)"
         ;;
     stable|nvidia)
+        test -e "$(root_path /etc/profile.d/umotd.sh)"
         ptyxis="$(root_path /usr/share/dudley/terminal/ptyxis.dconf)"
         grep -Fq "font-name='JetBrains Mono 16'" "${ptyxis}"
         grep -Fq "palette='catppuccin-dynamic'" "${ptyxis}"

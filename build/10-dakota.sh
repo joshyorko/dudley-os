@@ -40,7 +40,6 @@ python3 /ctx/oci/dsb-common/scripts/install-payload.py \
     --dest /
 
 for required in \
-    /etc/profile.d/umotd.sh \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
     /usr/libexec/dudley/ensure-homebrew \
