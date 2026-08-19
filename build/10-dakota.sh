@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-for command in bootc ujust podman python3 rsync jq dconf glib-compile-schemas; do
+for command in bootc ujust podman python3 jq dconf glib-compile-schemas; do
     command -v "${command}" >/dev/null
 done
 
@@ -12,7 +12,7 @@ copy_tree() {
 
     [[ -d "${source}" ]] || return 0
     install -d -m 0755 "${destination}"
-    rsync -a "$@" "${source}/" "${destination}/"
+    cp -a "$@" "${source}/." "${destination}/"
 }
 
 copy_file() {
