@@ -83,6 +83,21 @@ if [[ -e "${TMP_DIR}/bootstrap-attempted" ]]; then
     exit 1
 fi
 
+dakota_base_ref="$(
+    sed -n 's/^ARG BASE_IMAGE_REF="\([^"]*\)"$/\1/p' \
+        "${ROOT_DIR}/Containerfile.dakota"
+)"
+jq '.streams.dakota.required_ujust = ["dudley"]' \
+    "${ROOT_DIR}/contract/dudley-runtime.v1.json" > \
+    "${TMP_DIR}/current-runtime-contract.json"
+DUDLEY_ROOT="${fixture}" \
+DUDLEY_STREAM=dakota \
+BASE_IMAGE_REF="${dakota_base_ref}" \
+BOOTSTRAP_MARKER="${TMP_DIR}/bootstrap-attempted" \
+DUDLEY_RUNTIME_CONTRACT="${TMP_DIR}/current-runtime-contract.json" \
+PATH="${bin}:/usr/bin:/bin" \
+    bash "${ROOT_DIR}/build/18-parity-acceptance.sh"
+
 mkdir -p "${fixture}/etc/dconf/db/distro.d" "${fixture}/usr/share/dudley/terminal"
 printf "%s\n" "font-name='JetBrains Mono 16'" "palette='catppuccin-dynamic'" > \
     "${fixture}/usr/share/dudley/terminal/ptyxis.dconf"
@@ -112,3 +127,24 @@ grep -Fq '/ctx/build/18-parity-acceptance.sh' "${ROOT_DIR}/build/10-build.sh"
 grep -Fq '/ctx/build/18-parity-acceptance.sh' "${ROOT_DIR}/build/10-dakota.sh"
 grep -Fq 'COPY build/18-parity-acceptance.sh /build/18-parity-acceptance.sh' \
     "${ROOT_DIR}/Containerfile.dakota"
+
+python3 - "${ROOT_DIR}" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+renovate = json.loads((root / '.github/renovate.json5').read_text())
+assert any(
+    any(
+        re.search(pattern.strip('/'), 'contract/dudley-runtime.v1.json')
+        for pattern in manager.get('managerFilePatterns', [])
+    )
+    and any(
+        'dakota(?:-nvidia)?' in match
+        for match in manager.get('matchStrings', [])
+    )
+    for manager in renovate['customManagers']
+), 'Renovate must update Dakota base refs in the runtime contract'
+PY

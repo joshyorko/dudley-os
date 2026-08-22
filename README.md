@@ -96,7 +96,7 @@ terminal contracts are checked during every Dakota and Dakota NVIDIA build.
 Run `ujust dudley` to install the complete curated Dudley profile.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-19*
+*Last updated: 2026-08-22*
 
 ## Architecture
 
