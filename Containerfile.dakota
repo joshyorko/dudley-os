@@ -36,10 +36,10 @@ COPY custom/dakota /custom/dakota
 COPY custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf /custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf
 COPY custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override /custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override
 COPY custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh /custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:d9f966cb5f26f59c84a5e9b8397f0ef8db9eff350f94a94e26b5ad528679df3d /system_files/shared /oci/dsb-common/system_files/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:d9f966cb5f26f59c84a5e9b8397f0ef8db9eff350f94a94e26b5ad528679df3d /system_files/dudley /oci/dsb-common/system_files/dudley
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:d9f966cb5f26f59c84a5e9b8397f0ef8db9eff350f94a94e26b5ad528679df3d /contract/dudley-payload.v1.json /oci/dsb-common/contract/dudley-payload.v1.json
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:d9f966cb5f26f59c84a5e9b8397f0ef8db9eff350f94a94e26b5ad528679df3d /scripts/install-payload.py /oci/dsb-common/scripts/install-payload.py
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:62eb7bda5f5e39de80c7e68e46e64f522d380181e14075c37100a83261072393 /system_files/shared /oci/dsb-common/system_files/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:62eb7bda5f5e39de80c7e68e46e64f522d380181e14075c37100a83261072393 /system_files/dudley /oci/dsb-common/system_files/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:62eb7bda5f5e39de80c7e68e46e64f522d380181e14075c37100a83261072393 /contract/dudley-payload.v1.json /oci/dsb-common/contract/dudley-payload.v1.json
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:62eb7bda5f5e39de80c7e68e46e64f522d380181e14075c37100a83261072393 /scripts/install-payload.py /oci/dsb-common/scripts/install-payload.py
 COPY --from=google-chrome /chrome-root /oci/google-chrome
 COPY --from=docker-bin /usr/local/bin /oci/docker/usr/local/bin
 COPY --from=docker-bin /usr/local/libexec/docker/cli-plugins /oci/docker/usr/local/libexec/docker/cli-plugins
