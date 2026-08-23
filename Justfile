@@ -385,7 +385,7 @@ lint:
         exit 1
     fi
     # Run shellcheck on all Bash scripts
-    /usr/bin/find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
+    /usr/bin/find . -iname "*.sh" -type f -exec shellcheck -x "{}" ';'
 
 [group('Cards')]
 cards:
