@@ -18,7 +18,7 @@ That keeps Dudley opinion/payload in `dsb-common` while leaving only final assem
 
 - **`10-build.sh`** - Main build script for base system modifications, package installation, and service configuration
 - **`15-dx.sh`** - Restores and validates Dudley's Docker, Podman, virtualization, developer-tooling, Bazaar, and Nvidia DX runtime contract on Project Bluefin
-- **`bootc-accounts.sh`** - Promotes service users and groups created by late DX RPM installs into bootc's immutable account database so upgrades can resolve them
+- **`bootc-accounts.sh`** - Copies service users and groups created by late DX RPM installs into bootc's immutable account database while retaining current-build NSS resolution for linting
 
 ## Example Scripts
 

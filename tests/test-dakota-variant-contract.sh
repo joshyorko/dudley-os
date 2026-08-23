@@ -236,9 +236,14 @@ grep -Fq -- '--dest /' build/10-dakota.sh
 for required in \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
+    /etc/xdg/autostart/dudley-random-wallpaper.desktop \
+    /usr/bin/dudley-random-wallpaper \
     /usr/libexec/dudley/ensure-homebrew \
+    /usr/share/backgrounds/dudley \
     /usr/share/dudley/terminal-contract.json \
-    /usr/share/dudley/terminal/ghostty.conf; do
+    /usr/share/dudley/terminal/ghostty.conf \
+    /usr/share/gnome-background-properties/dudley.xml \
+    /usr/share/glib-2.0/schemas/zz0-dudley-background.gschema.override; do
     grep -Fq "    ${required}" build/10-dakota.sh
 done
 if grep -Fq '    /etc/profile.d/umotd.sh' build/10-dakota.sh; then
@@ -246,7 +251,7 @@ if grep -Fq '    /etc/profile.d/umotd.sh' build/10-dakota.sh; then
     exit 1
 fi
 # shellcheck disable=SC2016
-grep -Fq 'test -e "${required}"' build/10-dakota.sh
+grep -Fq '[[ ! -e "${required}" ]]' build/10-dakota.sh
 # shellcheck disable=SC2251
 ! grep -Eq '10-build\.sh|15-dx\.sh|rpm-ostree' Containerfile.dakota build/10-dakota.sh
 if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |

@@ -42,9 +42,14 @@ python3 /ctx/oci/dsb-common/scripts/install-payload.py \
 for required in \
     /etc/ublue-os/tags.json \
     /etc/umotd/config.json \
+    /etc/xdg/autostart/dudley-random-wallpaper.desktop \
+    /usr/bin/dudley-random-wallpaper \
     /usr/libexec/dudley/ensure-homebrew \
+    /usr/share/backgrounds/dudley \
     /usr/share/dudley/terminal-contract.json \
-    /usr/share/dudley/terminal/ghostty.conf; do
+    /usr/share/dudley/terminal/ghostty.conf \
+    /usr/share/gnome-background-properties/dudley.xml \
+    /usr/share/glib-2.0/schemas/zz0-dudley-background.gschema.override; do
     if [[ ! -e "${required}" ]]; then
         echo "Missing required Dakota payload path: ${required}" >&2
         exit 1

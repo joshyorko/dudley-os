@@ -49,8 +49,8 @@ for account in qemu libvirtdbus; do
         echo "FAIL: ${account} must be promoted exactly once to /usr/lib/passwd" >&2
         exit 1
     fi
-    if grep -q "^${account}:" "${test_root}/etc/passwd"; then
-        echo "FAIL: ${account} must not remain in /etc/passwd" >&2
+    if ! grep -q "^${account}:" "${test_root}/etc/passwd"; then
+        echo "FAIL: ${account} must remain resolvable from /etc/passwd during bootc lint" >&2
         exit 1
     fi
 done
@@ -60,8 +60,8 @@ for group in qemu libvirt docker; do
         echo "FAIL: ${group} must be promoted exactly once to /usr/lib/group" >&2
         exit 1
     fi
-    if grep -q "^${group}:" "${test_root}/etc/group"; then
-        echo "FAIL: ${group} must not remain in /etc/group" >&2
+    if ! grep -q "^${group}:" "${test_root}/etc/group"; then
+        echo "FAIL: ${group} must remain resolvable from /etc/group during bootc lint" >&2
         exit 1
     fi
 done

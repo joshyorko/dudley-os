@@ -7,10 +7,8 @@ promote_bootc_account_file() {
     local target_file=$2
     local temp_dir=$3
     local additions
-    local retained
 
     additions="${temp_dir}/$(basename "${target_file}").additions"
-    retained="${temp_dir}/$(basename "${source_file}").retained"
 
     [[ -f "${source_file}" ]] || return 0
     mkdir -p "$(dirname "${target_file}")"
@@ -23,12 +21,10 @@ promote_bootc_account_file() {
 
     [[ -s "${additions}" ]] || return 0
 
+    # Keep the package-created account in /etc for current-build NSS lookups
+    # such as bootc's var-tmpfiles lint. The immutable copy remains available
+    # through nss-altfiles after upgrades where machine-local /etc is retained.
     cat "${additions}" >>"${target_file}"
-    awk -F: '
-        FNR == NR { moved[$1] = 1; next }
-        !($1 in moved) { print }
-    ' "${additions}" "${source_file}" >"${retained}"
-    cat "${retained}" >"${source_file}"
 }
 
 promote_bootc_system_accounts() {

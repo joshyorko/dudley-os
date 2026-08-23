@@ -83,7 +83,8 @@ Stable and NVIDIA add the Dudley product layer while retaining their Project Blu
 Dakota installs the selector-reviewed, distribution-neutral `dsb-common`
 profile. It includes both
 Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
-of Ptyxis, and bakes native Google Chrome into the image from Google's
+of Ptyxis, carries Dudley's GNOME wallpapers and login randomizer, and bakes
+native Google Chrome into the image from Google's
 signature-verified RPM payload without adding RPM or DNF to the final image. Run
 `ujust dudley-dakota` once to initialize only Dudley's curated Homebrew profile,
 install the Dudley IDE bundle
@@ -96,7 +97,7 @@ terminal contracts are checked during every Dakota and Dakota NVIDIA build.
 Run `ujust dudley` to install the complete curated Dudley profile.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-22*
+*Last updated: 2026-08-23*
 
 ## Architecture
 
