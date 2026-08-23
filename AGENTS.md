@@ -29,7 +29,7 @@ The central bot must be able to read Dependabot/vulnerability alerts and write w
 
 **Execute before EVERY commit:**
 1. **Conventional Commits** - ALL commits MUST follow conventional commit format (see below)
-2. **Shellcheck** - `shellcheck *.sh` on all modified shell files
+2. **Shellcheck** - `just lint` for the repository-wide check; it follows sourced shell files with `shellcheck -x`
 3. **YAML validation** - `python3 -c "import yaml; yaml.safe_load(open('file.yml'))"` on all modified YAML
 4. **Justfile syntax** - `just --list` to verify
 5. **Confirm with user** - Always confirm before committing and pushing
