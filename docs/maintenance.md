@@ -43,6 +43,13 @@ Chrome extracted in a disposable Fedora builder stage, and Homebrew-delivered
 developer tools and VS Code Insiders. RPM and DNF do not enter the final Dakota
 image.
 
+Stable and Nvidia install Fedora DX packages after inheriting their finalized
+Bluefin bases. Package-created system users and groups must therefore be moved
+from `/etc/passwd` and `/etc/group` into the immutable `/usr/lib` account
+databases. Treat the late-installed package entries as authoritative by name so
+their numeric IDs continue to match installed file ownership and remain
+resolvable by `bootc container lint`.
+
 Publish Dakota images with standard `zstd` compression. Do not use
 `zstd:chunked`: Dakota's composefs updater rejects those images with
 `Unexpected EOF reading tar entry`.

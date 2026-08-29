@@ -27,6 +27,7 @@ EOF
 
 cat >"${test_root}/usr/lib/passwd" <<'EOF'
 bin:x:1:1:bin:/bin:/usr/sbin/nologin
+qemu:x:36:36:qemu user:/:/usr/sbin/nologin
 EOF
 
 cat >"${test_root}/etc/group" <<'EOF'
@@ -39,6 +40,7 @@ EOF
 
 cat >"${test_root}/usr/lib/group" <<'EOF'
 bin:x:1:
+qemu:x:36:
 EOF
 
 promote_bootc_system_accounts "${test_root}"
@@ -55,6 +57,8 @@ for account in qemu libvirtdbus; do
     fi
 done
 
+grep -q '^qemu:x:107:107:' "${test_root}/usr/lib/passwd"
+
 for group in qemu libvirt docker; do
     if [[ "$(grep -c "^${group}:" "${test_root}/usr/lib/group")" -ne 1 ]]; then
         echo "FAIL: ${group} must be promoted exactly once to /usr/lib/group" >&2
@@ -65,6 +69,8 @@ for group in qemu libvirt docker; do
         exit 1
     fi
 done
+
+grep -q '^qemu:x:107:' "${test_root}/usr/lib/group"
 
 grep -q '^root:' "${test_root}/etc/passwd"
 grep -q '^kdlocpanda:' "${test_root}/etc/passwd"

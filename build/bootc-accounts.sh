@@ -7,28 +7,34 @@ promote_bootc_account_file() {
     local target_file=$2
     local temp_dir=$3
     local additions
-    local retained
+    local source_retained
+    local target_retained
 
     additions="${temp_dir}/$(basename "${target_file}").additions"
-    retained="${temp_dir}/$(basename "${source_file}").retained"
+    source_retained="${temp_dir}/$(basename "${source_file}").retained"
+    target_retained="${temp_dir}/$(basename "${target_file}").retained"
 
     [[ -f "${source_file}" ]] || return 0
     mkdir -p "$(dirname "${target_file}")"
     touch "${target_file}"
 
     awk -F: '
-        FNR == NR { immutable[$1] = 1; next }
-        $1 != "root" && $3 ~ /^[0-9]+$/ && $3 > 0 && $3 < 1000 && !($1 in immutable) { print }
-    ' "${target_file}" "${source_file}" >"${additions}"
+        $1 != "root" && $3 ~ /^[0-9]+$/ && $3 > 0 && $3 < 1000 { print }
+    ' "${source_file}" >"${additions}"
 
     [[ -s "${additions}" ]] || return 0
 
+    awk -F: '
+        FNR == NR { promoted[$1] = 1; next }
+        !($1 in promoted) { print }
+    ' "${additions}" "${target_file}" >"${target_retained}"
+    cat "${target_retained}" >"${target_file}"
     cat "${additions}" >>"${target_file}"
     awk -F: '
         FNR == NR { moved[$1] = 1; next }
         !($1 in moved) { print }
-    ' "${additions}" "${source_file}" >"${retained}"
-    cat "${retained}" >"${source_file}"
+    ' "${additions}" "${source_file}" >"${source_retained}"
+    cat "${source_retained}" >"${source_file}"
 }
 
 promote_bootc_system_accounts() {
