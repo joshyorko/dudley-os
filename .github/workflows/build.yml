@@ -1,14 +1,7 @@
 ---
 name: Build container image
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**/README.md'
+  workflow_dispatch:
 
 env:
   IMAGE_DESC: "Dudley OS – a thin DSB product image built on Universal Blue"

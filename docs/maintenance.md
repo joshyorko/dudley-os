@@ -29,11 +29,11 @@ changing final assembly.
 
 ## Stream build inputs
 
-| Stream | Workflow | Base and product input |
-| --- | --- | --- |
-| Stable | `.github/workflows/build.yml` | `Containerfile` on the Project Bluefin Stable base, with the pinned `dsb-common` OCI resource. |
-| Nvidia | `.github/workflows/build-nvidia.yml` | `Containerfile` with the workflow's pinned `NVIDIA_BASE_IMAGE_REF` for Project Bluefin Nvidia. |
-| Dakota | `.github/workflows/build-dakota.yml` | `Containerfile.dakota` with pinned matrix inputs for matching `dakota` and `dakota-nvidia` file-only overlays. |
+| Stream | Workflow | Activation | Base and product input |
+| --- | --- | --- | --- |
+| Stable | `.github/workflows/build.yml` | Manual dispatch only while Bluefin builds are paused. | `Containerfile` on the Project Bluefin Stable base, with the pinned `dsb-common` OCI resource. |
+| Nvidia | `.github/workflows/build-nvidia.yml` | Manual dispatch only while Bluefin builds are paused. | `Containerfile` with the workflow's pinned `NVIDIA_BASE_IMAGE_REF` for Project Bluefin Nvidia. |
+| Dakota | `.github/workflows/build-dakota.yml` | Pull requests and default-branch pushes, plus manual dispatch. | `Containerfile.dakota` with pinned matrix inputs for matching `dakota` and `dakota-nvidia` file-only overlays. |
 
 Dakota is experimental and does not carry Fedora RPM parity with the Stable and
 Nvidia streams. Its product glue maps the Dudley contract to Dakota-native
@@ -60,9 +60,10 @@ installer selects `dakota` on non-NVIDIA hardware.
 
 ## Validation workflows
 
-Pull requests build the image variants without publishing. Default-branch
-builds publish only after the workflow's preflight step. Repository validation
-also covers the Justfile, ShellCheck, Renovate configuration, and final image
+Dakota pull requests build both image variants without publishing, and
+default-branch builds publish only after the workflow's preflight step. Stable
+and Nvidia builds are temporarily manual-only. Repository validation also
+covers the Justfile, ShellCheck, Renovate configuration, and final image
 contracts; reusable Brewfile and Flatpak payload validation belongs in
 `dsb-common`.
 

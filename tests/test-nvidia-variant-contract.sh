@@ -11,14 +11,12 @@ if [[ ! -f "${WORKFLOW}" ]]; then
     exit 1
 fi
 
-for trigger in 'workflow_dispatch:' 'pull_request:' 'push:'; do
-    if ! grep -q "^  ${trigger}" "${WORKFLOW}"; then
-        echo "FAIL: Nvidia workflow must support ${trigger}" >&2
-        exit 1
-    fi
-done
+if ! grep -q '^  workflow_dispatch:' "${WORKFLOW}"; then
+    echo "FAIL: Nvidia workflow must support manual dispatch" >&2
+    exit 1
+fi
 
-for automatic_trigger in 'schedule:' 'merge_group:'; do
+for automatic_trigger in 'pull_request:' 'push:' 'schedule:' 'merge_group:'; do
     if grep -q "^  ${automatic_trigger}" "${WORKFLOW}"; then
         echo "FAIL: Nvidia workflow must not automatically trigger ${automatic_trigger}" >&2
         exit 1
@@ -109,4 +107,4 @@ if ! grep -q 'BUILD_ARGS+=("--build-arg" "BASE_IMAGE_REF=${BASE_IMAGE_REF}")' "$
     exit 1
 fi
 
-echo "PASS: Nvidia variant workflow runs on PR/main, tracks stable upstream, is tagged/signed, and is GPU-base aware"
+echo "PASS: Nvidia variant workflow is manual-only, tracks stable upstream, is tagged/signed, and is GPU-base aware"
