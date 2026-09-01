@@ -36,8 +36,8 @@
     },
     "dakota": {
       "accepted_base_refs": [
-        "ghcr.io/projectbluefin/dakota:stable@sha256:027885dd555c0b7b21fbb9d0926028d38241cddb091a29b425558aa373a5d220",
-        "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:4e60ff5730e5279c3a0aeef3744c294fac3dcab6b1182d7544b4e8ac7526eff3"
+        "ghcr.io/projectbluefin/dakota:stable@sha256:3848692f96d93ce88fedc3a90fccc8c216167c020ec08d751897f3dccbab86b6",
+        "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:d12e7e953b6d3987c4bc9482216d9fe985ee6daa8ec6b0309ed889e36b10bdd3"
       ],
       "required_ujust": [
         "benchmark",
