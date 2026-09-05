@@ -1,6 +1,6 @@
 ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:3848692f96d93ce88fedc3a90fccc8c216167c020ec08d751897f3dccbab86b6"
 ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:46@sha256:8776f2d93f0e80262b0c19fc130fe1a60e71ee00e05ae174600c4f1205ba698b"
-ARG DOCKER_BIN_REF="docker.io/library/docker:29-dind@sha256:3ef33f2e220b79ed3ef3b99d81746f06f306cd6340e2cb7331d17ae996e74cb6"
+ARG DOCKER_BIN_REF="docker.io/library/docker:29-dind@sha256:5efed980cba3fc126cf54e21a5a6ff8849d05b6e0623d6e7612f48e9cd6cd17e"
 
 FROM ${CHROME_BUILDER_REF} AS google-chrome
 RUN dnf install -y cpio curl rpm xdg-utils && \
