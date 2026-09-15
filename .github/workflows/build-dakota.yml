@@ -35,9 +35,9 @@ jobs:
         # image on non-NVIDIA hardware, so both tags are one release contract.
         include:
           - tag: dakota
-            base_image_ref: "ghcr.io/projectbluefin/dakota:stable@sha256:2f6ef4c637e2ad7af15c602f9389b7a323488eac05e0fffaff973b7727110fbc"
+            base_image_ref: "ghcr.io/projectbluefin/dakota:stable@sha256:aab8b6ee59d1c19948eb367fabfbcf47319346139f6d56cf894a7a229badc436"
           - tag: dakota-nvidia
-            base_image_ref: "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:52bfb4d9134727fe4fc652b8dd54deabfddad5896cd1504e970f7d6335522d42"
+            base_image_ref: "ghcr.io/projectbluefin/dakota-nvidia:stable@sha256:eef1d396dcf074edc5972a4a38ebfd7a54098380577b9405481f1554a1ebd598"
     permissions:
       contents: read
       packages: write
