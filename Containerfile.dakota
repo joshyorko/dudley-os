@@ -29,6 +29,7 @@ COPY build/install-dakota-chrome.sh /build/install-dakota-chrome.sh
 COPY build/install-dakota-docker.sh /build/install-dakota-docker.sh
 COPY build/install-dakota-hooks.sh /build/install-dakota-hooks.sh
 COPY build/install-dakota-just.sh /build/install-dakota-just.sh
+COPY build/install-dakota-review-runtime.sh /build/install-dakota-review-runtime.sh
 COPY build/20-final-metadata.sh /build/20-final-metadata.sh
 COPY contract/dudley-runtime.v1.json /contract/dudley-runtime.v1.json
 COPY custom/ujust /custom/ujust
