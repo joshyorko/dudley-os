@@ -20,6 +20,25 @@ RUN dnf install -y cpio curl rpm xdg-utils && \
     test -x /chrome-root/opt/google/chrome/google-chrome && \
     rm -f /tmp/google-linux-signing-key.pub /tmp/google-chrome.rpm
 
+FROM ${CHROME_BUILDER_REF} AS review-runtime
+RUN dnf install -y crun-krun e2fsprogs gocryptfs && \
+    runtime_root=/review-runtime/usr/lib/dudley-review-runtime && \
+    install -d -m 0755 "${runtime_root}/bin" "${runtime_root}/lib64" && \
+    install -m 0755 /usr/bin/krun "${runtime_root}/bin/crun-krun" && \
+    install -m 0755 /usr/bin/fuse2fs /usr/bin/gocryptfs "${runtime_root}/bin/" && \
+    cp -a /usr/lib64/libkrun.so.* /usr/lib64/libkrunfw.so.* "${runtime_root}/lib64/" && \
+    { \
+        ldd /usr/bin/krun; \
+        ldd /usr/bin/fuse2fs; \
+        ldd /usr/bin/gocryptfs; \
+        ldd /usr/lib64/libkrun.so.1; \
+    } | awk '/=> \// { print $3 } $1 ~ /^\// { print $1 }' | sort -u | \
+        xargs -r -I '{}' cp -L --preserve=mode,timestamps '{}' "${runtime_root}/lib64/" && \
+    test -x "${runtime_root}/bin/crun-krun" && \
+    test -x "${runtime_root}/bin/fuse2fs" && \
+    test -x "${runtime_root}/bin/gocryptfs" && \
+    test -x "${runtime_root}/lib64/ld-linux-x86-64.so.2"
+
 FROM ${DOCKER_BIN_REF} AS docker-bin
 
 FROM scratch AS ctx
@@ -29,6 +48,7 @@ COPY build/install-dakota-chrome.sh /build/install-dakota-chrome.sh
 COPY build/install-dakota-docker.sh /build/install-dakota-docker.sh
 COPY build/install-dakota-hooks.sh /build/install-dakota-hooks.sh
 COPY build/install-dakota-just.sh /build/install-dakota-just.sh
+COPY build/install-dakota-review-runtime.sh /build/install-dakota-review-runtime.sh
 COPY build/20-final-metadata.sh /build/20-final-metadata.sh
 COPY contract/dudley-runtime.v1.json /contract/dudley-runtime.v1.json
 COPY custom/ujust /custom/ujust
@@ -43,6 +63,7 @@ COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:4ff00bac84c914095bd978ff4
 COPY --from=google-chrome /chrome-root /oci/google-chrome
 COPY --from=docker-bin /usr/local/bin /oci/docker/usr/local/bin
 COPY --from=docker-bin /usr/local/libexec/docker/cli-plugins /oci/docker/usr/local/libexec/docker/cli-plugins
+COPY --from=review-runtime /review-runtime /oci/review-runtime
 
 FROM ${BASE_IMAGE_REF}
 ARG BASE_IMAGE_REF

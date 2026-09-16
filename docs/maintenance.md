@@ -40,8 +40,10 @@ Nvidia streams. Its product glue maps the Dudley contract to Dakota-native
 components: Ghostty, native Podman, the real Docker Engine with Compose and
 Buildx copied from a pinned upstream Docker image, signature-verified native
 Chrome extracted in a disposable Fedora builder stage, and Homebrew-delivered
-developer tools and VS Code Insiders. RPM and DNF do not enter the final Dakota
-image.
+developer tools and VS Code Insiders. The Bluefin Review host runtime follows
+the same builder-stage pattern: Fedora supplies `crun-krun`, `fuse2fs`, and
+`gocryptfs`, while Dakota receives only their staged runtime files. RPM and DNF
+do not enter the final Dakota image.
 
 Stable and Nvidia install Fedora DX packages after inheriting their finalized
 Bluefin bases. Package-created system users and groups must therefore be moved

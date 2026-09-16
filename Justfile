@@ -43,6 +43,7 @@ test-unit:
     bash tests/test-final-metadata.sh
     bash tests/test-parity-acceptance-contract.sh
     bash tests/test-dakota-publish-compression.sh
+    bash tests/test-dakota-review-runtime-contract.sh
     bash tests/test-dakota-variant-contract.sh
     bash tests/test-nvidia-variant-contract.sh
     bash tests/test-publish-workflow-contract.sh

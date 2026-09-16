@@ -69,6 +69,7 @@ copy_executable \
 
 /ctx/build/install-dakota-chrome.sh /ctx/oci/google-chrome /
 /ctx/build/install-dakota-docker.sh /ctx/oci/docker /
+/ctx/build/install-dakota-review-runtime.sh /ctx/oci/review-runtime /
 
 systemctl enable docker.socket
 
