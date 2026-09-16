@@ -84,7 +84,10 @@ Dakota installs the selector-reviewed, distribution-neutral `dsb-common`
 profile. It includes both
 Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
 of Ptyxis, and bakes native Google Chrome into the image from Google's
-signature-verified RPM payload without adding RPM or DNF to the final image. Run
+signature-verified RPM payload without adding RPM or DNF to the final image.
+It also stages the `crun-krun`, `fuse2fs`, and `gocryptfs` host runtime used by
+Bluefin Review from a disposable Fedora builder. The final Dakota image copies
+only the runtime files and keeps its package-manager-free assembly contract. Run
 `ujust dudley-dakota` once to initialize only Dudley's curated Homebrew profile,
 install the Dudley IDE bundle
 (including VS Code Insiders), and remove the obsolete Podman-backed
@@ -96,7 +99,7 @@ terminal contracts are checked during every Dakota and Dakota NVIDIA build.
 Run `ujust dudley` to install the complete curated Dudley profile.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-08-22*
+*Last updated: 2026-09-16*
 
 ## Architecture
 

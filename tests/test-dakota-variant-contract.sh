@@ -246,11 +246,14 @@ if grep -Fq '    /etc/profile.d/umotd.sh' build/10-dakota.sh; then
     exit 1
 fi
 # shellcheck disable=SC2016
-grep -Fq 'test -e "${required}"' build/10-dakota.sh
+grep -Fq '[[ ! -e "${required}" ]]' build/10-dakota.sh
 # shellcheck disable=SC2251
 ! grep -Eq '10-build\.sh|15-dx\.sh|rpm-ostree' Containerfile.dakota build/10-dakota.sh
-if sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh |
-    grep -Eq '(^|[[:space:];|&/])(dnf|dnf5)([[:space:]]|$)'; then
+final_stage="$(awk '$0 == "FROM ${BASE_IMAGE_REF}" { found=1 } found' Containerfile.dakota)"
+if {
+    printf '%s\n' "${final_stage}"
+    sed -E '/^[[:space:]]*#/d; s/[[:space:]]+#.*$//' build/10-dakota.sh
+} | grep -Eq '(^|[[:space:];|&/])(dnf|dnf5)([[:space:]]|$)'; then
     echo 'FAIL: the final Dakota image assembly must not invoke dnf or dnf5' >&2
     exit 1
 fi
