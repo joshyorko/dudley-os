@@ -108,9 +108,52 @@ for plugin in docker-buildx docker-compose; do
     chmod +x "${TMP_DIR}/docker-source/usr/local/libexec/docker/cli-plugins/${plugin}"
 done
 
+firewall_config="${TMP_DIR}/docker-root/usr/lib/python3.14/site-packages/firewall/config/__init__.py"
+install -d "$(dirname "${firewall_config}")" "${TMP_DIR}/docker-root/usr/bin"
+cat > "${firewall_config}" <<'EOF'
+COMMANDS = {
+    "ipv4": "/bin/false",
+    "ipv4-restore": "/bin/false",
+    "ipv6": "/bin/false",
+    "ipv6-restore": "/bin/false",
+    "eb": "/bin/false",
+}
+EOF
+for command in iptables iptables-restore ip6tables ip6tables-restore; do
+    install -m 0755 /usr/bin/true "${TMP_DIR}/docker-root/usr/bin/${command}"
+done
+
 "${ROOT_DIR}/build/install-dakota-docker.sh" \
     "${TMP_DIR}/docker-source" \
     "${TMP_DIR}/docker-root"
+
+python3 - "${firewall_config}" <<'PY'
+import runpy
+import sys
+
+commands = runpy.run_path(sys.argv[1])["COMMANDS"]
+assert commands == {
+    "ipv4": "/usr/bin/iptables",
+    "ipv4-restore": "/usr/bin/iptables-restore",
+    "ipv6": "/usr/bin/ip6tables",
+    "ipv6-restore": "/usr/bin/ip6tables-restore",
+    "eb": "/bin/false",
+}, commands
+PY
+
+# Reinstallation preserves working upstream paths and unrelated backends.
+sed -i 's|/usr/bin/iptables"|/usr/sbin/iptables"|' "${firewall_config}"
+cp "${firewall_config}" "${TMP_DIR}/firewall-expected.py"
+"${ROOT_DIR}/build/install-dakota-docker.sh" \
+    "${TMP_DIR}/docker-source" "${TMP_DIR}/docker-root"
+cmp "${firewall_config}" "${TMP_DIR}/firewall-expected.py"
+chmod -x "${TMP_DIR}/docker-root/usr/bin/ip6tables-restore"
+if "${ROOT_DIR}/build/install-dakota-docker.sh" \
+    "${TMP_DIR}/docker-source" "${TMP_DIR}/docker-root"; then
+    echo 'FAIL: Docker installation must reject a missing firewall helper' >&2
+    exit 1
+fi
+chmod +x "${TMP_DIR}/docker-root/usr/bin/ip6tables-restore"
 
 test "$("${TMP_DIR}/docker-root/usr/bin/docker")" = 'docker-real-docker'
 test "$("${TMP_DIR}/docker-root/usr/bin/dockerd")" = 'dockerd-real-docker'

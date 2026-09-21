@@ -85,6 +85,8 @@ profile. It includes both
 Podman and the real Docker Engine with Compose and Buildx, uses Ghostty instead
 of Ptyxis, and bakes native Google Chrome into the image from Google's
 signature-verified RPM payload without adding RPM or DNF to the final image.
+Dudley restores disabled firewalld iptables helper paths so Docker can create
+container networks without disabling the firewall.
 It also stages the `crun-krun`, `fuse2fs`, and `gocryptfs` host runtime used by
 Bluefin Review from a disposable Fedora builder. The final Dakota image copies
 only the runtime files and keeps its package-manager-free assembly contract. Run
@@ -99,7 +101,7 @@ terminal contracts are checked during every Dakota and Dakota NVIDIA build.
 Run `ujust dudley` to install the complete curated Dudley profile.
 The Fedora/RPM/DNF and libvirt host payload remain excluded.
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-21*
 
 ## Architecture
 
