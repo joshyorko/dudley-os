@@ -10,6 +10,21 @@ bin_destination="${destination_root%/}/usr/bin"
 plugin_destination="${destination_root%/}/usr/libexec/docker/cli-plugins"
 systemd_destination="${destination_root%/}/usr/lib/systemd/system"
 
+# Dakota's firewalld can be built without iptables in its build environment,
+# recording /bin/false even though the final image ships the helpers Docker needs.
+for command in iptables iptables-restore ip6tables ip6tables-restore; do
+    test -x "${bin_destination}/${command}"
+done
+for config in "${destination_root%/}"/usr/lib/python3*/site-packages/firewall/config/__init__.py; do
+    test -f "${config}"
+    sed -i \
+        -e '/"ipv4":/s|/bin/false|/usr/bin/iptables|' \
+        -e '/"ipv4-restore":/s|/bin/false|/usr/bin/iptables-restore|' \
+        -e '/"ipv6":/s|/bin/false|/usr/bin/ip6tables|' \
+        -e '/"ipv6-restore":/s|/bin/false|/usr/bin/ip6tables-restore|' \
+        "${config}"
+done
+
 install -d -m 0755 \
     "${bin_destination}" \
     "${plugin_destination}" \
