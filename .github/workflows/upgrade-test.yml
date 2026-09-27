@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   upgrade-test:
-    uses: projectbluefin/actions/.github/workflows/upgrade-test.yml@601eb67dcb8fb07eaf3cc683274c91ee31268479 # v1
+    uses: projectbluefin/actions/.github/workflows/upgrade-test.yml@3febbaafca01ca3fd1973eb71a7d07d0c2958090 # v1
     permissions:
       contents: read
       packages: write
