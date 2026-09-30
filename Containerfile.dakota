@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_REF="ghcr.io/projectbluefin/dakota:stable@sha256:ddab2e2d816976a8f181603987e76d1c992109f435b2abdf1eae76f40f7139f8"
-ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:46@sha256:3864f9f920659424cb22befe5739de816a3440fdb6a81e036b380a4fd78e96bb"
+ARG CHROME_BUILDER_REF="registry.fedoraproject.org/fedora:46@sha256:b91fda866f0706c54fe6d1d15b9a66604ad1ce38abb57770ecb70fad84dd7635"
 ARG DOCKER_BIN_REF="docker.io/library/docker:29-dind@sha256:3f3c01aaaebf7cce837356b688b7c059a4749f10bd7660dec7c58fc454a283f0"
 
 FROM ${CHROME_BUILDER_REF} AS google-chrome
@@ -56,10 +56,10 @@ COPY custom/dakota /custom/dakota
 COPY custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf /custom/system_files/etc/fonts/conf.d/60-dudley-monospace.conf
 COPY custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override /custom/system_files/usr/share/glib-2.0/schemas/zz1-dudley-terminal.gschema.override
 COPY custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh /custom/system_files/usr/share/ublue-os/user-setup.hooks.d/10-wallpaper-enforcement.sh
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /system_files/shared /oci/dsb-common/system_files/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /system_files/dudley /oci/dsb-common/system_files/dudley
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /contract/dudley-payload.v1.json /oci/dsb-common/contract/dudley-payload.v1.json
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /scripts/install-payload.py /oci/dsb-common/scripts/install-payload.py
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /system_files/shared /oci/dsb-common/system_files/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /system_files/dudley /oci/dsb-common/system_files/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /contract/dudley-payload.v1.json /oci/dsb-common/contract/dudley-payload.v1.json
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /scripts/install-payload.py /oci/dsb-common/scripts/install-payload.py
 COPY --from=google-chrome /chrome-root /oci/google-chrome
 COPY --from=docker-bin /usr/local/bin /oci/docker/usr/local/bin
 COPY --from=docker-bin /usr/local/libexec/docker/cli-plugins /oci/docker/usr/local/libexec/docker/cli-plugins

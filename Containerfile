@@ -41,8 +41,8 @@ COPY build /build
 COPY contract /contract
 COPY custom /custom
 # Shared DSB organisation layer – product-agnostic configs consumed by all DSB images
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /system_files/shared /oci/dsb-common/shared
-COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:a1eedb0e9bd3458a5f335c44b0469df79d1f9882bf72959ef2859e89890ea4be /system_files/dudley /oci/dsb-common/dudley
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /system_files/shared /oci/dsb-common/shared
+COPY --from=ghcr.io/joshyorko/dsb-common:latest@sha256:e280a293612d20a703b669281368ad213475146fd37ac4ad73cc6ef0053a6e4c /system_files/dudley /oci/dsb-common/dudley
 
 # Base Image - inherit Project Bluefin directly so Bluefin userland, shell, MOTD,
 # image metadata, and developer tooling stay internally consistent.
