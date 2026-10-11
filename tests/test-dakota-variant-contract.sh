@@ -330,7 +330,7 @@ assert not Path('iso/dakota.toml').exists(), (
 cards_workflow = yaml.safe_load(Path('.github/workflows/validate-cards.yml').read_text())
 cards_steps = cards_workflow['jobs']['validate']['steps']
 assert cards_steps[0]['uses'] == 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-assert cards_steps[1]['uses'] == 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020'
+assert cards_steps[1]['uses'] == 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1'
 renovate = json.loads(Path('.github/renovate.json5').read_text())
 assert any(
     any(re.search(pattern.strip('/'), 'Containerfile.dakota') for pattern in manager.get('managerFilePatterns', []))
