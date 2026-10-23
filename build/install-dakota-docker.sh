@@ -31,10 +31,15 @@ install -d -m 0755 \
     "${systemd_destination}" \
     "${destination_root%/}/usr/lib/sysusers.d"
 
-for command in containerd containerd-shim-runc-v2 ctr docker docker-init docker-proxy dockerd runc; do
+for command in containerd-shim-runc-v2 ctr docker docker-init docker-proxy dockerd runc; do
     test -x "${docker_bin_source}/${command}"
     install -m 0755 "${docker_bin_source}/${command}" "${bin_destination}/${command}"
 done
+
+# Newer Docker images embed containerd; keep importing it from older images.
+if [[ -x "${docker_bin_source}/containerd" ]]; then
+    install -m 0755 "${docker_bin_source}/containerd" "${bin_destination}/containerd"
+fi
 
 for plugin in docker-buildx docker-compose; do
     test -x "${plugin_source}/${plugin}"
