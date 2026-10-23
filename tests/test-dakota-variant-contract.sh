@@ -168,6 +168,31 @@ grep -Fq 'SocketGroup=docker' \
     "${TMP_DIR}/docker-root/usr/lib/systemd/system/docker.socket"
 grep -Fxq 'g docker - -' \
     "${TMP_DIR}/docker-root/usr/lib/sysusers.d/dudley-docker.conf"
+test "$("${TMP_DIR}/docker-root/usr/bin/containerd")" = 'containerd-real-docker'
+
+# Newer Docker images use embedded containerd and omit its standalone binary.
+mv "${TMP_DIR}/docker-source/usr/local/bin/containerd" "${TMP_DIR}/containerd"
+cp -a "${TMP_DIR}/docker-root" "${TMP_DIR}/docker-embedded-root"
+rm "${TMP_DIR}/docker-embedded-root/usr/bin/containerd"
+"${ROOT_DIR}/build/install-dakota-docker.sh" \
+    "${TMP_DIR}/docker-source" "${TMP_DIR}/docker-embedded-root"
+test ! -e "${TMP_DIR}/docker-embedded-root/usr/bin/containerd"
+test "$("${TMP_DIR}/docker-embedded-root/usr/bin/dockerd")" = 'dockerd-real-docker'
+test "$("${TMP_DIR}/docker-embedded-root/usr/bin/containerd-shim-runc-v2")" = \
+    'containerd-shim-runc-v2-real-docker'
+
+# Embedded containerd does not make the remaining Docker binaries optional.
+for command in containerd-shim-runc-v2 ctr docker docker-init docker-proxy dockerd runc; do
+    mv "${TMP_DIR}/docker-source/usr/local/bin/${command}" "${TMP_DIR}/${command}"
+    if "${ROOT_DIR}/build/install-dakota-docker.sh" \
+        "${TMP_DIR}/docker-source" "${TMP_DIR}/docker-embedded-root"; then
+        echo "FAIL: Docker installation must reject missing ${command}" >&2
+        exit 1
+    fi
+    mv "${TMP_DIR}/${command}" "${TMP_DIR}/docker-source/usr/local/bin/${command}"
+done
+mv "${TMP_DIR}/containerd" "${TMP_DIR}/docker-source/usr/local/bin/containerd"
+
 test ! -e "${ROOT_DIR}/custom/dakota/usr/local/bin/docker"
 test ! -e "${ROOT_DIR}/custom/dakota/usr/bin/dudley-podman-docker"
 grep -Fq 'for command in bootc ujust podman' "${ROOT_DIR}/build/10-dakota.sh"
