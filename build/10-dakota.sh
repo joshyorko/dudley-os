@@ -56,6 +56,8 @@ copy_tree /ctx/custom/system_files/usr/share/glib-2.0/schemas /usr/share/glib-2.
 copy_tree /ctx/custom/system_files/usr/share/ublue-os/user-setup.hooks.d /usr/share/ublue-os/user-setup.hooks.d
 copy_file /ctx/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings \
     /etc/dconf/db/distro.d/99-dudley-terminal-keybindings
+copy_file /ctx/custom/dakota/etc/xdg/compass/compass.json \
+    /etc/xdg/compass/compass.json
 install -D -m 0644 /usr/share/dudley/terminal/ghostty.conf /etc/ghostty/config
 cat /ctx/custom/dakota/etc/ghostty/config >> /etc/ghostty/config
 copy_executable \
