@@ -215,8 +215,10 @@ install -d "${TMP_DIR}/dconf"
 cp "${ROOT_DIR}/custom/dakota/etc/dconf/db/distro.d/99-dudley-terminal-keybindings" \
     "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
 dconf compile "${TMP_DIR}/distro-db" "${TMP_DIR}/dconf"
-grep -Fq "custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']" \
-    "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
+if grep -Fq 'custom-keybindings=' "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"; then
+    echo 'FAIL: Dakota terminal keybinding override must not clobber inherited custom-keybindings' >&2
+    exit 1
+fi
 grep -Fq "name='Terminal'" "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
 grep -Fq "command='/usr/bin/ghostty --gtk-single-instance=true'" \
     "${TMP_DIR}/dconf/99-dudley-terminal-keybindings"
@@ -225,6 +227,10 @@ if grep -Fq '/usr/bin/ptyxis --new-window' "${TMP_DIR}/dconf/99-dudley-terminal-
     echo 'FAIL: Dakota terminal shortcut must not invoke Ptyxis' >&2
     exit 1
 fi
+jq -e '.launcher.hotkey == ""' \
+    "${ROOT_DIR}/custom/dakota/etc/xdg/compass/compass.json" >/dev/null
+grep -Fq 'copy_file /ctx/custom/dakota/etc/xdg/compass/compass.json' build/10-dakota.sh
+grep -Fq '/etc/xdg/compass/compass.json' build/10-dakota.sh
 grep -Fq 'install -D -m 0644 /usr/share/dudley/terminal/ghostty.conf /etc/ghostty/config' build/10-dakota.sh
 grep -Fq 'cat /ctx/custom/dakota/etc/ghostty/config >> /etc/ghostty/config' build/10-dakota.sh
 grep -Fq 'command = /home/linuxbrew/.linuxbrew/bin/zsh' custom/dakota/etc/ghostty/config
